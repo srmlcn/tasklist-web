@@ -48,7 +48,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const items = getStoredItems<Item[]>() || [];
+    const items = getStoredItems();
 
     const newItem: Item = {
       ...body,
@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
-    const items = getStoredItems<Item[]>() || [];
+    const items = getStoredItems();
 
     const index = items.findIndex((item) => item.id === id);
     if (index === -1) {
@@ -107,7 +107,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const items = getStoredItems<Item[]>() || [];
+    const items = getStoredItems();
     const index = items.findIndex((item) => item.id === id);
 
     if (index === -1) {

@@ -308,7 +308,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
                 onClick={() => {
                   if (!item) return;
                   
-                  // Build the duplicate from current form state
+                  // Build the duplicate from current form state (name only, parent adds "(Copy)")
                   if (isTask(item)) {
                     const [hours, minutes] = deadlineTime.split(':').map(Number);
                     const deadlineDate = new Date(deadline);
@@ -316,12 +316,13 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
                     
                     const duplicated: Task = {
                       ...item,
-                      id: '', // Will be assigned by addItem
-                      name: `${name.trim()} (Copy)`,
+                      id: '',
+                      name: name.trim(),
                       description: description.trim(),
                       deadline: deadlineDate.toISOString(),
                       priority,
                       isComplete: false,
+                      order: 0,
                     };
                     onDuplicate(duplicated);
                   } else {
@@ -336,13 +337,14 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
                     
                     const duplicated: Appointment = {
                       ...item,
-                      id: '', // Will be assigned by addItem
-                      name: `${name.trim()} (Copy)`,
+                      id: '',
+                      name: name.trim(),
                       description: description.trim(),
                       start: startDateTime.toISOString(),
                       stop: endDateTime.toISOString(),
                       priority,
                       attendees: attendeesText.split(',').map(a => a.trim()).filter(a => a.length > 0),
+                      order: 0,
                     };
                     onDuplicate(duplicated);
                   }

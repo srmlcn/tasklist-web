@@ -10,16 +10,24 @@ export function useNotifications(items: Item[]) {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [enabled, setEnabled] = useState(false);
 
+  // Sync enabled state with actual permission
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    // Check stored preference
-    const stored = localStorage.getItem(NOTIFICATION_KEY);
-    setEnabled(stored === 'true');
-    
     // Check current permission
     if ('Notification' in window) {
-      setPermission(Notification.permission);
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+      
+      // Only enable if permission is granted and localStorage says so
+      const stored = localStorage.getItem(NOTIFICATION_KEY);
+      if (currentPermission === 'granted' && stored === 'true') {
+        setEnabled(true);
+      } else {
+        // Clear stale state if permission was revoked
+        setEnabled(false);
+        localStorage.removeItem(NOTIFICATION_KEY);
+      }
     }
   }, []);
 
@@ -37,8 +45,12 @@ export function useNotifications(items: Item[]) {
         setEnabled(true);
         localStorage.setItem(NOTIFICATION_KEY, 'true');
         return true;
+      } else {
+        // Permission denied - ensure UI reflects this
+        setEnabled(false);
+        localStorage.removeItem(NOTIFICATION_KEY);
+        return false;
       }
-      return false;
     } catch (error) {
       console.error('Failed to request notification permission:', error);
       return false;
@@ -48,12 +60,16 @@ export function useNotifications(items: Item[]) {
   const toggleEnabled = useCallback(() => {
     if (permission !== 'granted') {
       requestPermission();
-      return;
+    } else {
+      // Toggle only when permission is already granted
+      const newEnabled = !enabled;
+      setEnabled(newEnabled);
+      if (newEnabled) {
+        localStorage.setItem(NOTIFICATION_KEY, 'true');
+      } else {
+        localStorage.removeItem(NOTIFICATION_KEY);
+      }
     }
-    
-    const newEnabled = !enabled;
-    setEnabled(newEnabled);
-    localStorage.setItem(NOTIFICATION_KEY, String(newEnabled));
   }, [enabled, permission, requestPermission]);
 
   // Check for upcoming tasks and send notifications
@@ -74,23 +90,29 @@ export function useNotifications(items: Item[]) {
         // Check if already notified
         if (sessionStorage.getItem(notificationId)) return;
 
-        // Notify only with the most urgent timing that applies
-        const fifteenMinutes = 15 * 60 * 1000;
-        const oneHour = 60 * 60 * 1000;
+        const timeUntilDue = deadline.getTime() - now.getTime();
 
-        // Priority: 15 min > 1 hour
-        if (deadline > now && deadline.getTime() - now.getTime() <= fifteenMinutes) {
-          // Most urgent - 15 minutes or less
-          new Notification('Task Due Very Soon!', {
-            body: `"${task.name}" is due in 15 minutes`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, 'notified');
-        } else if (deadline > now && deadline.getTime() - now.getTime() <= oneHour) {
-          // Less urgent - within 1 hour but not within 15 minutes
-          new Notification('Task Due Soon', {
-            body: `"${task.name}" is due in 1 hour`,
+        // Notify with accurate time remaining
+        if (deadline > now) {
+          let body: string;
+          let title: string;
+          
+          if (timeUntilDue <= 5 * 60 * 1000) {
+            title = 'Task Due Now!';
+            body = `"${task.name}" is due now`;
+          } else if (timeUntilDue <= 15 * 60 * 1000) {
+            title = 'Task Due Very Soon!';
+            body = `"${task.name}" is due in ${Math.ceil(timeUntilDue / 60000)} minutes`;
+          } else if (timeUntilDue <= 60 * 60 * 1000) {
+            title = 'Task Due Soon';
+            body = `"${task.name}" is due in ${Math.ceil(timeUntilDue / 60000)} minutes`;
+          } else {
+            title = 'Task Due Reminder';
+            body = `"${task.name}" is due in ${Math.ceil(timeUntilDue / 3600000)} hours`;
+          }
+          
+          new Notification(title, {
+            body,
             icon: '/favicon.ico',
             tag: notificationId,
           });

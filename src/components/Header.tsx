@@ -305,15 +305,17 @@ export function Header({
                 📥 Import Data
               </button>
               <div className="border-t border-gray-600" />
-              <button
-                onClick={() => {
-                  onToggleNotifications?.();
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
-              >
-                🔔 {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
-              </button>
+              {onToggleNotifications && (
+                <button
+                  onClick={() => {
+                    onToggleNotifications();
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
+                >
+                  🔔 {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to clear all items? This cannot be undone.')) {

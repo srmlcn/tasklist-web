@@ -40,7 +40,7 @@ export function useItems() {
     mutate(ITEMS_KEY, { items: newItems }, false);
   }, [localMutate]);
 
-  const addItem = useCallback((item: Omit<Item, 'id'>): Item => {
+  const addItem = useCallback((item: Omit<Item, 'id' | 'order'>): Item => {
     const maxOrder = items.reduce((max, i) => Math.max(max, i.order || 0), 0);
     const newItem = { ...item, id: generateId(), order: maxOrder + 1 } as Item;
     const newItems = [...items, newItem];

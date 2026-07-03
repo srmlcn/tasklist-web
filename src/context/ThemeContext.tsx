@@ -15,10 +15,8 @@ const THEME_KEY = 'tasklist-theme';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const stored = localStorage.getItem(THEME_KEY) as Theme | null;
     if (stored === 'light' || stored === 'dark') {
       setTheme(stored);
@@ -33,10 +31,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('light', newTheme === 'light');
   };
 
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide context, even during SSR
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
@@ -46,6 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
+  // Throw error if ThemeProvider is not in the tree
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }

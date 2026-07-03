@@ -5,10 +5,14 @@ import { Item } from '@/types';
 import { getStoredItems, clearStoredItems, setStoredItems } from '@/context/SWRProvider';
 import { useTheme } from '@/context/ThemeContext';
 
+type ItemFilter = 'all' | 'tasks' | 'appointments';
+type SortOption = 'time' | 'priority' | 'name' | 'deadline';
+
 interface HeaderProps {
   onSearch: (term: string) => void;
-  sortByPriority: boolean;
-  onToggleSort: () => void;
+  sortOption?: SortOption;
+  onSortChange?: (option: SortOption) => void;
+  onToggleSort?: () => void;
   onAddTask: () => void;
   onAddAppointment: () => void;
   onExport: () => void;
@@ -19,11 +23,17 @@ interface HeaderProps {
   onViewModeChange?: (mode: 'calendar' | 'today') => void;
   notificationsEnabled?: boolean;
   onToggleNotifications?: () => void;
+  categories?: { id: string; name: string; color: string }[];
+  itemFilter?: ItemFilter;
+  onFilterChange?: (filter: ItemFilter) => void;
+  categoryFilter?: string | null;
+  onCategoryFilterChange?: (categoryId: string | null) => void;
 }
 
 export function Header({
   onSearch,
-  sortByPriority,
+  sortOption = 'time',
+  onSortChange,
   onToggleSort,
   onAddTask,
   onAddAppointment,
@@ -35,14 +45,20 @@ export function Header({
   onViewModeChange,
   notificationsEnabled = false,
   onToggleNotifications,
+  categories = [],
+  itemFilter = 'all',
+  onFilterChange,
+  categoryFilter = null,
+  onCategoryFilterChange,
 }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -53,11 +69,15 @@ export function Header({
       if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
         setShowAddMenu(false);
       }
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setShowSortMenu(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -198,26 +218,104 @@ export function Header({
           </div>
         </div>
 
-        {/* Sort button */}
-        <button
-          onClick={onToggleSort}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-            sortByPriority
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-          title={sortByPriority ? 'Sorted by priority' : 'Sorted by time'}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
-            />
-          </svg>
-          <span className="text-sm">{sortByPriority ? 'Priority' : 'Time'}</span>
-        </button>
+        {/* Filter tabs */}
+        <div className="flex rounded-md overflow-hidden border border-gray-600">
+          {(['all', 'tasks', 'appointments'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => onFilterChange?.(filter)}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                itemFilter === filter
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title={`Show ${filter}`}
+            >
+              {filter === 'all' ? '📋 All' : filter === 'tasks' ? '✅ Tasks' : '📅 Appointments'}
+            </button>
+          ))}
+        </div>
+
+        {/* Category filter */}
+        {categories.length > 0 && (
+          <div className="flex items-center gap-1">
+            <select
+              value={categoryFilter || ''}
+              onChange={(e) => onCategoryFilterChange?.(e.target.value || null)}
+              className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Sort dropdown */}
+        <div className="relative" ref={sortMenuRef}>
+          <button
+            onClick={() => setShowSortMenu(!showSortMenu)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+              sortOption !== 'time'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+            title="Sort options"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+              />
+            </svg>
+            <span className="text-sm">
+              {sortOption === 'time' ? 'Sort' : sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}
+            </span>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showSortMenu && (
+            <div className="absolute top-full right-0 mt-1 w-40 bg-gray-700 rounded-md shadow-lg border border-gray-600 z-50">
+              <button
+                onClick={() => { onSortChange?.('time'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm rounded-t-md transition-colors ${
+                  sortOption === 'time' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                🕐 By Time
+              </button>
+              <button
+                onClick={() => { onSortChange?.('priority'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                  sortOption === 'priority' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                ⭐ By Priority
+              </button>
+              <button
+                onClick={() => { onSortChange?.('name'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                  sortOption === 'name' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                🔤 By Name
+              </button>
+              <button
+                onClick={() => { onSortChange?.('deadline'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm rounded-b-md transition-colors ${
+                  sortOption === 'deadline' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                📅 By Deadline
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Theme toggle */}
         <button
@@ -341,5 +439,49 @@ export function Header({
         className="hidden"
       />
     </header>
+  );
+}
+
+// Floating Action Button for quick add
+interface FloatingActionButtonProps {
+  onAddTask: () => void;
+  onAddAppointment: () => void;
+}
+
+export function FloatingActionButton({ onAddTask, onAddAppointment }: FloatingActionButtonProps) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {showMenu && (
+        <div className="absolute bottom-16 right-0 flex flex-col gap-2 mb-2">
+          <button
+            onClick={() => { onAddTask(); setShowMenu(false); }}
+            className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-all animate-in slide-in-from-bottom-2"
+          >
+            <span className="text-lg">📋</span>
+            <span className="font-medium">Add Task</span>
+          </button>
+          <button
+            onClick={() => { onAddAppointment(); setShowMenu(false); }}
+            className="flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg transition-all animate-in slide-in-from-bottom-2"
+          >
+            <span className="text-lg">📅</span>
+            <span className="font-medium">Add Appointment</span>
+          </button>
+        </div>
+      )}
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className={`fab-button w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-transform ${
+          showMenu ? 'rotate-45' : ''
+        }`}
+        title="Quick add"
+      >
+        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    </div>
   );
 }

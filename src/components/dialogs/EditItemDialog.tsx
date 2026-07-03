@@ -15,6 +15,8 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   // Task-specific fields
   const [deadline, setDeadline] = useState('');
@@ -33,6 +35,8 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
       setName(item.name);
       setDescription(item.description);
       setPriority(item.priority);
+      setTags(item.tags || []);
+      setTagInput('');
 
       if (isTask(item)) {
         const task = item as Task;
@@ -59,6 +63,25 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
     }
   }, [isOpen, item]);
 
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
   // Build current form state for duplicate functionality
   const getCurrentFormState = (): Omit<Item, 'id' | 'order'> | null => {
     if (!name.trim() || !item) return null;
@@ -79,6 +102,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
         isComplete,
         recurrence: currentItem.recurrence,
         categoryId: currentItem.categoryId,
+        tags,
       } as Omit<Task, 'id' | 'order'>;
     } else {
       const [startHours, startMinutes] = startTime.split(':').map(Number);
@@ -105,6 +129,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
         attendees,
         recurrence: currentItem.recurrence,
         categoryId: currentItem.categoryId,
+        tags,
       } as Omit<Appointment, 'id' | 'order'>;
     }
   };
@@ -125,6 +150,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
         deadline: deadlineDate.toISOString(),
         priority,
         isComplete,
+        tags,
       } as Task);
     } else {
       const [startHours, startMinutes] = startTime.split(':').map(Number);
@@ -149,6 +175,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
         stop: endDateTime.toISOString(),
         priority,
         attendees,
+        tags,
       } as Appointment);
     }
 
@@ -355,6 +382,47 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
                   {label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Tags
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-gray-700 rounded-full text-xs text-gray-200"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="text-gray-400 hover:text-gray-200"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Add a tag..."
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
+              >
+                Add
+              </button>
             </div>
           </div>
 

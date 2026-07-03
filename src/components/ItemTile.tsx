@@ -147,6 +147,20 @@ export function ItemTile({
             Priority: {priorityLabel}
           </div>
 
+          {/* Tags */}
+          {item.tags && item.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {item.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-0.5 bg-gray-700 rounded-full text-xs text-gray-300"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2 mt-3">
             <button

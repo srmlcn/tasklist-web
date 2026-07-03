@@ -221,11 +221,13 @@ curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
   "https://api.github.com/graphql" \
   -d '{"query": "mutation { markPullRequestReadyForReview(input: {pullRequestId: \"PR_NODE_ID\"}) { pullRequest { isDraft } } }"}'
 
-# Merge via API
+# Merge via API with non-fast-forward (--no-ff behavior)
 curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/owner/repo/pulls/PR_NUM/merge" \
-  -d '{"commit_title": "feat: your feature (#PR_NUM)"}'
+  -d '{"merge_method": "merge", "commit_title": "feat: your feature (#PR_NUM)"}'
 ```
+
+GitHub's default merge creates a merge commit (equivalent to `--no-ff`), preserving the feature branch history.
 
 ---
 
@@ -353,12 +355,19 @@ Always branch from the latest `main` to avoid merge conflicts:
 git checkout main && git pull origin main
 ```
 
-### Squash When Appropriate
+### Prefer Non-Fast-Forward Merging
 
-For messy histories, squash commits before merging:
+Always use `--no-ff` when merging to preserve the feature branch history:
+
 ```bash
-git rebase -i HEAD~3  # Combine last 3 commits
+git merge --no-ff feat/your-feature-name
 ```
+
+This creates a merge commit that groups all feature commits together, maintaining the micro-to-macro logical flow:
+- Small, atomic commits tell the story of *how* a feature was built
+- The merge commit summarizes *what* the feature accomplishes
+- `git log --first-parent` shows a clean project history
+- `git log` shows the detailed development path
 
 ### Use Meaningful Branch Names
 

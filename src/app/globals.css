@@ -6,6 +6,13 @@
   --slate-accent: #6b7280;
 }
 
+/* Light theme */
+.light {
+  --background: #f9fafb;
+  --foreground: #111827;
+  --slate-accent: #9ca3af;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -23,6 +30,14 @@ body {
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #9ca3af;
 }
 
 ::-webkit-scrollbar-track {
@@ -47,4 +62,14 @@ body {
 /* Prevent text selection on UI elements */
 button, input, select, textarea {
   user-select: none;
+}
+
+/* Light theme overrides */
+.light {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.light ::placeholder {
+  color: #9ca3af;
 }

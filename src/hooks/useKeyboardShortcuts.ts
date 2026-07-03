@@ -12,6 +12,8 @@ interface KeyboardShortcuts {
   onDeleteSelected?: () => void;
   onEditSelected?: () => void;
   onToggleCompleteSelected?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -24,6 +26,8 @@ export function useKeyboardShortcuts({
   onDeleteSelected,
   onEditSelected,
   onToggleCompleteSelected,
+  onUndo,
+  onRedo,
 }: KeyboardShortcuts) {
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     // Ignore if user is typing in an input field
@@ -33,10 +37,18 @@ export function useKeyboardShortcuts({
       target.tagName === 'TEXTAREA' ||
       target.isContentEditable
     ) {
-      // Only handle Escape in input fields
+      // Only handle Escape and Ctrl+Z/Ctrl+Y in input fields
       if (event.key === 'Escape' && onEscape) {
         event.preventDefault();
         onEscape();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (onUndo) onUndo();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        if (onRedo) onRedo();
       }
       return;
     }
@@ -59,6 +71,14 @@ export function useKeyboardShortcuts({
         case 's':
           event.preventDefault();
           // Save is automatic with localStorage
+          break;
+        case 'z':
+          event.preventDefault();
+          if (onUndo) onUndo();
+          break;
+        case 'y':
+          event.preventDefault();
+          if (onRedo) onRedo();
           break;
       }
       return;
@@ -138,6 +158,8 @@ export function KeyboardShortcutsHelp() {
       <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">K</kbd> or <kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Ctrl+K</kbd> - Focus search</div>
       <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">S</kbd> - Toggle sort</div>
       <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">E</kbd> or <kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Ctrl+E</kbd> - Export data</div>
+      <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Ctrl+Z</kbd> - Undo</div>
+      <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Ctrl+Y</kbd> - Redo</div>
       <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Enter</kbd> - Edit selected</div>
       <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Delete</kbd> - Delete selected</div>
       <div><kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Space</kbd> - Toggle complete</div>

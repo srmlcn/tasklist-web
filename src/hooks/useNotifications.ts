@@ -13,12 +13,12 @@ export function useNotifications(items: Item[]) {
   // Sync enabled state with actual permission
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     // Check current permission
     if ('Notification' in window) {
       const currentPermission = Notification.permission;
       setPermission(currentPermission);
-      
+
       // Only enable if permission is granted and localStorage says so
       const stored = localStorage.getItem(NOTIFICATION_KEY);
       if (currentPermission === 'granted' && stored === 'true') {
@@ -40,7 +40,7 @@ export function useNotifications(items: Item[]) {
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-      
+
       if (result === 'granted') {
         setEnabled(true);
         localStorage.setItem(NOTIFICATION_KEY, 'true');
@@ -78,6 +78,8 @@ export function useNotifications(items: Item[]) {
 
     const checkUpcomingTasks = () => {
       const now = new Date();
+      const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
       items.forEach((item) => {
         if (!isTask(item)) return;
@@ -85,38 +87,32 @@ export function useNotifications(items: Item[]) {
         if (task.isComplete) return;
 
         const deadline = new Date(task.deadline);
-        const notificationId = `notified-${task.id}`;
 
-        // Check if already notified
-        if (sessionStorage.getItem(notificationId)) return;
-
-        const timeUntilDue = deadline.getTime() - now.getTime();
-
-        // Notify with accurate time remaining
-        if (deadline > now) {
-          let body: string;
-          let title: string;
-          
-          if (timeUntilDue <= 5 * 60 * 1000) {
-            title = 'Task Due Now!';
-            body = `"${task.name}" is due now`;
-          } else if (timeUntilDue <= 15 * 60 * 1000) {
-            title = 'Task Due Very Soon!';
-            body = `"${task.name}" is due in ${Math.ceil(timeUntilDue / 60000)} minutes`;
-          } else if (timeUntilDue <= 60 * 60 * 1000) {
-            title = 'Task Due Soon';
-            body = `"${task.name}" is due in ${Math.ceil(timeUntilDue / 60000)} minutes`;
-          } else {
-            title = 'Task Due Reminder';
-            body = `"${task.name}" is due in ${Math.ceil(timeUntilDue / 3600000)} hours`;
+        // Priority: 15 minutes before > 1 hour before
+        // Notify 15 minutes before (most urgent)
+        if (deadline > now && deadline <= fifteenMinutesFromNow) {
+          const fifteenMinKey = `notified-15m-${task.id}`;
+          if (!sessionStorage.getItem(fifteenMinKey)) {
+            new Notification('Task Due Very Soon!', {
+              body: `"${task.name}" is due in 15 minutes`,
+              icon: '/favicon.ico',
+              tag: fifteenMinKey,
+            });
+            sessionStorage.setItem(fifteenMinKey, 'true');
           }
-          
-          new Notification(title, {
-            body,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, 'notified');
+        } else if (deadline > now && deadline <= oneHourFromNow) {
+          // Notify 1 hour before (less urgent, only if not within 15 min)
+          const oneHourKey = `notified-1h-${task.id}`;
+          const fifteenMinKey = `notified-15m-${task.id}`;
+          // Only send 1-hour notification if 15-minute wasn't already sent
+          if (!sessionStorage.getItem(fifteenMinKey) && !sessionStorage.getItem(oneHourKey)) {
+            new Notification('Task Due Soon', {
+              body: `"${task.name}" is due in 1 hour`,
+              icon: '/favicon.ico',
+              tag: oneHourKey,
+            });
+            sessionStorage.setItem(oneHourKey, 'true');
+          }
         }
       });
     };

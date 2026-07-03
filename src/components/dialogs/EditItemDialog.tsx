@@ -7,7 +7,7 @@ interface EditItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (item: Item) => void;
-  onDuplicate?: (item: Item) => void;
+  onDuplicate?: (item: Omit<Item, 'id' | 'order'>) => void;
   item: Item | null;
 }
 
@@ -59,6 +59,56 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
     }
   }, [isOpen, item]);
 
+  // Build current form state for duplicate functionality
+  const getCurrentFormState = (): Omit<Item, 'id' | 'order'> | null => {
+    if (!name.trim() || !item) return null;
+
+    const currentItem = item;
+
+    if (isTask(currentItem)) {
+      const [hours, minutes] = deadlineTime.split(':').map(Number);
+      const deadlineDate = new Date(deadline);
+      deadlineDate.setHours(hours, minutes, 0, 0);
+
+      return {
+        type: 'task',
+        name: name.trim(),
+        description: description.trim(),
+        deadline: deadlineDate.toISOString(),
+        priority,
+        isComplete,
+        recurrence: currentItem.recurrence,
+        categoryId: currentItem.categoryId,
+      } as Omit<Task, 'id' | 'order'>;
+    } else {
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
+
+      const attendees = attendeesText
+        .split(',')
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0);
+
+      return {
+        type: 'appointment',
+        name: name.trim(),
+        description: description.trim(),
+        start: startDateTime.toISOString(),
+        stop: endDateTime.toISOString(),
+        priority,
+        attendees,
+        recurrence: currentItem.recurrence,
+        categoryId: currentItem.categoryId,
+      } as Omit<Appointment, 'id' | 'order'>;
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !item) return;
@@ -103,6 +153,14 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
     }
 
     onClose();
+  };
+
+  const handleDuplicate = () => {
+    const formState = getCurrentFormState();
+    if (formState && onDuplicate) {
+      onDuplicate({ ...formState, name: `${formState.name} (Copy)` } as Omit<Item, 'id' | 'order'>);
+      onClose();
+    }
   };
 
   if (!isOpen || !item) return null;
@@ -305,51 +363,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
             {onDuplicate && (
               <button
                 type="button"
-                onClick={() => {
-                  if (!item) return;
-                  
-                  // Build the duplicate from current form state (name only, parent adds "(Copy)")
-                  if (isTask(item)) {
-                    const [hours, minutes] = deadlineTime.split(':').map(Number);
-                    const deadlineDate = new Date(deadline);
-                    deadlineDate.setHours(hours, minutes, 0, 0);
-                    
-                    const duplicated: Task = {
-                      ...item,
-                      id: '',
-                      name: name.trim(),
-                      description: description.trim(),
-                      deadline: deadlineDate.toISOString(),
-                      priority,
-                      isComplete: false,
-                      order: 0,
-                    };
-                    onDuplicate(duplicated);
-                  } else {
-                    const [startHours, startMinutes] = startTime.split(':').map(Number);
-                    const [endHours, endMinutes] = endTime.split(':').map(Number);
-                    
-                    const startDateTime = new Date(startDate);
-                    startDateTime.setHours(startHours, startMinutes, 0, 0);
-                    
-                    const endDateTime = new Date(endDate);
-                    endDateTime.setHours(endHours, endMinutes, 0, 0);
-                    
-                    const duplicated: Appointment = {
-                      ...item,
-                      id: '',
-                      name: name.trim(),
-                      description: description.trim(),
-                      start: startDateTime.toISOString(),
-                      stop: endDateTime.toISOString(),
-                      priority,
-                      attendees: attendeesText.split(',').map(a => a.trim()).filter(a => a.length > 0),
-                      order: 0,
-                    };
-                    onDuplicate(duplicated);
-                  }
-                  onClose();
-                }}
+                onClick={handleDuplicate}
                 className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md transition-colors"
               >
                 📋 Duplicate

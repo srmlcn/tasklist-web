@@ -1,8 +1,46 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Item, isTask, getItemDateTime } from '@/types';
 import { ItemTile } from './ItemTile';
+
+interface SortableItemWrapperProps {
+  item: Item;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleComplete: () => void;
+}
+
+function SortableItemWrapper({ item, onEdit, onDelete, onToggleComplete }: SortableItemWrapperProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <ItemTile
+        item={item}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onToggleComplete={onToggleComplete}
+        compact={false}
+      />
+    </div>
+  );
+}
 
 interface DayColumnProps {
   date: Date;
@@ -17,6 +55,7 @@ interface DayColumnProps {
   sortByPriority?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
+  onReorderItems?: (items: Item[]) => void;
 }
 
 export function DayColumn({
@@ -105,13 +144,12 @@ export function DayColumn({
             </div>
           ) : (
             sortedItems.map((item) => (
-              <ItemTile
+              <SortableItemWrapper
                 key={item.id}
                 item={item}
                 onEdit={() => onEditItem(item)}
                 onDelete={() => onDeleteItem(item)}
                 onToggleComplete={() => onToggleComplete(item)}
-                compact={false}
               />
             ))
           )}

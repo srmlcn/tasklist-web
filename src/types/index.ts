@@ -31,6 +31,7 @@ export interface BaseItem {
   parentId?: string; // For recurring instances, links to the original item
   color?: string;
   categoryId?: string; // Category ID reference
+  order: number; // For drag-and-drop ordering within a day
 }
 
 export interface Task extends BaseItem {

@@ -21,6 +21,7 @@ export default function Home() {
     toggleTaskComplete,
     importItems,
     clearAllItems,
+    reorderItems,
   } = useItems();
 
   const { categories, updateCategories } = useCategories();
@@ -84,6 +85,24 @@ export default function Home() {
     clearAllItems();
   }, [clearAllItems]);
 
+  const handleReorderItems = useCallback((itemId: string, newOrder: number) => {
+    const itemIndex = items.findIndex(i => i.id === itemId);
+    if (itemIndex === -1) return;
+
+    // Simple reorder: increment all items with order >= newOrder
+    const updatedItems = items.map(item => {
+      if (item.id === itemId) {
+        return { ...item, order: newOrder };
+      }
+      if (newOrder > 0 && item.order >= newOrder && item.order < items[itemIndex].order) {
+        return { ...item, order: item.order + 1 };
+      }
+      return item;
+    });
+
+    reorderItems(updatedItems);
+  }, [items, reorderItems]);
+
   return (
     <div className="flex flex-col h-screen">
       <Header
@@ -103,6 +122,7 @@ export default function Home() {
         onEditItem={handleEditItem}
         onDeleteItem={(item) => setDeleteConfirmItem(item)}
         onToggleComplete={handleToggleComplete}
+        onReorderItems={handleReorderItems}
         searchTerm={searchTerm}
         sortByPriority={sortByPriority}
       />

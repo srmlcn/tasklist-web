@@ -62,8 +62,6 @@ export function useNotifications(items: Item[]) {
 
     const checkUpcomingTasks = () => {
       const now = new Date();
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-      const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
 
       items.forEach((item) => {
         if (!isTask(item)) return;
@@ -76,24 +74,27 @@ export function useNotifications(items: Item[]) {
         // Check if already notified
         if (sessionStorage.getItem(notificationId)) return;
 
-        // Notify 1 hour before
-        if (deadline > now && deadline <= oneHourFromNow) {
-          new Notification('Task Due Soon', {
-            body: `"${task.name}" is due in 1 hour`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, '1h');
-        }
+        // Notify only with the most urgent timing that applies
+        const fifteenMinutes = 15 * 60 * 1000;
+        const oneHour = 60 * 60 * 1000;
 
-        // Notify 15 minutes before
-        if (deadline > now && deadline <= fifteenMinutesFromNow) {
+        // Priority: 15 min > 1 hour
+        if (deadline > now && deadline.getTime() - now.getTime() <= fifteenMinutes) {
+          // Most urgent - 15 minutes or less
           new Notification('Task Due Very Soon!', {
             body: `"${task.name}" is due in 15 minutes`,
             icon: '/favicon.ico',
             tag: notificationId,
           });
-          sessionStorage.setItem(notificationId, '15m');
+          sessionStorage.setItem(notificationId, 'notified');
+        } else if (deadline > now && deadline.getTime() - now.getTime() <= oneHour) {
+          // Less urgent - within 1 hour but not within 15 minutes
+          new Notification('Task Due Soon', {
+            body: `"${task.name}" is due in 1 hour`,
+            icon: '/favicon.ico',
+            tag: notificationId,
+          });
+          sessionStorage.setItem(notificationId, 'notified');
         }
       });
     };

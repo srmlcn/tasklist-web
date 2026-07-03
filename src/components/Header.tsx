@@ -17,6 +17,8 @@ interface HeaderProps {
   onManageCategories?: () => void;
   viewMode?: 'calendar' | 'today';
   onViewModeChange?: (mode: 'calendar' | 'today') => void;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
 }
 
 export function Header({
@@ -31,6 +33,8 @@ export function Header({
   onManageCategories,
   viewMode = 'calendar',
   onViewModeChange,
+  notificationsEnabled = false,
+  onToggleNotifications,
 }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
@@ -303,12 +307,12 @@ export function Header({
               <div className="border-t border-gray-600" />
               <button
                 onClick={() => {
-                  // Toggle notifications - handled by parent
+                  onToggleNotifications?.();
                   setShowMenu(false);
                 }}
                 className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
               >
-                🔔 Enable Notifications
+                🔔 {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
               </button>
               <button
                 onClick={() => {

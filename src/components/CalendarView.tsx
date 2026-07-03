@@ -41,8 +41,6 @@ interface TodayViewProps {
   onToggleComplete: (item: Item) => void;
   onAddTask: () => void;
   onAddAppointment: () => void;
-  searchTerm?: string;
-  sortByPriority?: boolean;
   selectedItemId?: string;
   onSelectItem?: (item: Item | null) => void;
 }
@@ -54,8 +52,6 @@ export function TodayView({
   onToggleComplete,
   onAddTask,
   onAddAppointment,
-  searchTerm,
-  sortByPriority,
   selectedItemId,
   onSelectItem,
 }: TodayViewProps) {
@@ -63,36 +59,15 @@ export function TodayView({
   today.setHours(0, 0, 0, 0);
 
   const todayItems = useMemo(() => {
-    let filtered = items.filter((item) => {
+    return items.filter((item) => {
       const itemDate = getItemDateTime(item);
       itemDate.setHours(0, 0, 0, 0);
       return itemDate.getTime() === today.getTime();
-    });
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(term) ||
-          item.description.toLowerCase().includes(term)
-      );
-    }
-
-    if (sortByPriority) {
-      filtered.sort((a, b) => b.priority - a.priority);
-    } else {
-      filtered.sort((a, b) => {
-        const dateA = getItemDateTime(a);
-        const dateB = getItemDateTime(b);
-        return dateA.getTime() - dateB.getTime();
-      });
-    }
-
-    return filtered;
-  }, [items, searchTerm, sortByPriority]);
+    }).sort((a, b) => a.order - b.order);
+  }, [items]);
 
   return (
-    <div className="flex-1 overflow-hidden bg-gray-900 p-4">
+    <div className="flex-1 overflow-auto bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto">
         {/* Today's header */}
         <div className="mb-6">
@@ -122,38 +97,24 @@ export function TodayView({
           </button>
         </div>
 
-        {/* Today's items */}
-        <div className="space-y-3">
-          {todayItems.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg mb-2">No items scheduled for today</p>
-              <p className="text-sm">Add a task or appointment to get started!</p>
-            </div>
-          ) : (
-            todayItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => onSelectItem?.(item)}
-                className={`${
-                  selectedItemId === item.id ? 'ring-2 ring-blue-500' : ''
-                }`}
-              >
-                <DayColumn
-                  date={today}
-                  items={[item]}
-                  isToday={true}
-                  onEditItem={onEditItem}
-                  onDeleteItem={onDeleteItem}
-                  onToggleComplete={onToggleComplete}
-                  searchTerm={searchTerm}
-                  sortByPriority={sortByPriority}
-                  selectedItemId={selectedItemId}
-                  onSelectItem={onSelectItem}
-                />
-              </div>
-            ))
-          )}
-        </div>
+        {/* Today's items - single DayColumn for all items */}
+        {todayItems.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <p className="text-lg mb-2">No items scheduled for today</p>
+            <p className="text-sm">Add a task or appointment to get started!</p>
+          </div>
+        ) : (
+          <DayColumn
+            date={today}
+            items={todayItems}
+            isToday={true}
+            onEditItem={onEditItem}
+            onDeleteItem={onDeleteItem}
+            onToggleComplete={onToggleComplete}
+            selectedItemId={selectedItemId}
+            onSelectItem={onSelectItem}
+          />
+        )}
       </div>
     </div>
   );

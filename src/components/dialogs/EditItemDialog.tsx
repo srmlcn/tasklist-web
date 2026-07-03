@@ -306,7 +306,46 @@ export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: E
               <button
                 type="button"
                 onClick={() => {
-                  if (item) onDuplicate(item);
+                  if (!item) return;
+                  
+                  // Build the duplicate from current form state
+                  if (isTask(item)) {
+                    const [hours, minutes] = deadlineTime.split(':').map(Number);
+                    const deadlineDate = new Date(deadline);
+                    deadlineDate.setHours(hours, minutes, 0, 0);
+                    
+                    const duplicated: Task = {
+                      ...item,
+                      id: '', // Will be assigned by addItem
+                      name: `${name.trim()} (Copy)`,
+                      description: description.trim(),
+                      deadline: deadlineDate.toISOString(),
+                      priority,
+                      isComplete: false,
+                    };
+                    onDuplicate(duplicated);
+                  } else {
+                    const [startHours, startMinutes] = startTime.split(':').map(Number);
+                    const [endHours, endMinutes] = endTime.split(':').map(Number);
+                    
+                    const startDateTime = new Date(startDate);
+                    startDateTime.setHours(startHours, startMinutes, 0, 0);
+                    
+                    const endDateTime = new Date(endDate);
+                    endDateTime.setHours(endHours, endMinutes, 0, 0);
+                    
+                    const duplicated: Appointment = {
+                      ...item,
+                      id: '', // Will be assigned by addItem
+                      name: `${name.trim()} (Copy)`,
+                      description: description.trim(),
+                      start: startDateTime.toISOString(),
+                      stop: endDateTime.toISOString(),
+                      priority,
+                      attendees: attendeesText.split(',').map(a => a.trim()).filter(a => a.length > 0),
+                    };
+                    onDuplicate(duplicated);
+                  }
                   onClose();
                 }}
                 className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md transition-colors"

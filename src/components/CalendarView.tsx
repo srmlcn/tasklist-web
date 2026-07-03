@@ -27,6 +27,8 @@ interface CalendarViewProps {
   onReorderItems: (itemId: string, newOrder: number) => void;
   searchTerm?: string;
   sortByPriority?: boolean;
+  selectedItemId?: string;
+  onSelectItem?: (item: Item | null) => void;
 }
 
 const DAYS_TO_SHOW = 14;
@@ -40,6 +42,8 @@ export function CalendarView({
   onReorderItems,
   searchTerm,
   sortByPriority,
+  selectedItemId,
+  onSelectItem,
 }: CalendarViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [days, setDays] = useState<Date[]>([]);
@@ -218,6 +222,8 @@ export function CalendarView({
                 sortByPriority={sortByPriority}
                 isSelected={selectedDate?.getTime() === date.getTime()}
                 onSelect={() => setSelectedDate(date)}
+                selectedItemId={selectedItemId}
+                onSelectItem={onSelectItem}
               />
             );
           })}

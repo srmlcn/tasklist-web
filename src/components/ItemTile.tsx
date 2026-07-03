@@ -9,6 +9,7 @@ interface ItemTileProps {
   onDelete: () => void;
   onToggleComplete?: () => void;
   compact?: boolean;
+  isSelected?: boolean;
 }
 
 export function ItemTile({
@@ -17,6 +18,7 @@ export function ItemTile({
   onDelete,
   onToggleComplete,
   compact = false,
+  isSelected = false,
 }: ItemTileProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 

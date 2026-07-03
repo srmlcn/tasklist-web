@@ -105,9 +105,28 @@ export function TodayView({
 
         {/* Today's items - single DayColumn for all items */}
         {todayItems.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg mb-2">No items scheduled for today</p>
-            <p className="text-sm">Add a task or appointment to get started!</p>
+          <div className="text-center py-16">
+            <div className="mb-6">
+              <svg className="w-24 h-24 mx-auto text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-xl text-gray-400 mb-2">No items for today!</p>
+            <p className="text-gray-500 mb-6">Start fresh or add something new</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={onAddTask}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                + Add Task
+              </button>
+              <button
+                onClick={onAddAppointment}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                + Add Appointment
+              </button>
+            </div>
           </div>
         ) : (
           <DayColumn

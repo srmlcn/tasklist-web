@@ -18,6 +18,51 @@ import { CategoryManager } from '@/components/dialogs/CategoryManager';
 type ItemFilter = 'all' | 'tasks' | 'appointments';
 type SortOption = 'time' | 'priority' | 'name' | 'deadline';
 
+// Stats display component
+function StatsBar({ items }: { items: Item[] }) {
+  const stats = useMemo(() => {
+    const tasks = items.filter(isTask);
+    const appointments = items.filter((item): item is Appointment => !isTask(item));
+    const completedTasks = tasks.filter(t => t.isComplete);
+    const now = new Date();
+    const overdueItems = items.filter(item => {
+      const deadline = getItemDateTime(item);
+      return deadline < now && isTask(item) && !(item as Task).isComplete;
+    });
+    
+    return {
+      total: items.length,
+      tasks: tasks.length,
+      appointments: appointments.length,
+      completed: completedTasks.length,
+      overdue: overdueItems.length,
+    };
+  }, [items]);
+  
+  return (
+    <div className="flex items-center gap-6 px-4 py-2 bg-gray-800/50 border-b border-gray-700 text-sm">
+      <div className="flex items-center gap-1">
+        <span className="text-gray-400">Total:</span>
+        <span className="font-semibold text-gray-200">{stats.total}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-gray-400">Tasks:</span>
+        <span className="font-semibold text-blue-400">{stats.tasks}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-gray-400">Done:</span>
+        <span className="font-semibold text-green-400">{stats.completed}</span>
+      </div>
+      {stats.overdue > 0 && (
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400">Overdue:</span>
+          <span className="font-semibold text-red-400">{stats.overdue}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const {
     items,
@@ -234,6 +279,8 @@ export default function Home() {
         categoryFilter={categoryFilter}
         onCategoryFilterChange={handleCategoryFilterChange}
       />
+
+      <StatsBar items={items} />
 
       {viewMode === 'today' ? (
         <TodayView

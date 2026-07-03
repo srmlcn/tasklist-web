@@ -15,6 +15,8 @@ interface HeaderProps {
   onImport: (items: Item[]) => void;
   onClearAll: () => void;
   onManageCategories?: () => void;
+  viewMode?: 'calendar' | 'today';
+  onViewModeChange?: (mode: 'calendar' | 'today') => void;
 }
 
 export function Header({
@@ -27,6 +29,8 @@ export function Header({
   onImport,
   onClearAll,
   onManageCategories,
+  viewMode = 'calendar',
+  onViewModeChange,
 }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
@@ -228,6 +232,34 @@ export function Header({
           )}
         </button>
 
+        {/* View mode toggle */}
+        {onViewModeChange && (
+          <div className="flex rounded-md overflow-hidden border border-gray-600">
+            <button
+              onClick={() => onViewModeChange('today')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'today'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title="Today view"
+            >
+              📅 Today
+            </button>
+            <button
+              onClick={() => onViewModeChange('calendar')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title="Calendar view"
+            >
+              🗓️ Calendar
+            </button>
+          </div>
+        )}
+
         {/* Menu button */}
         <div className="relative" ref={menuRef}>
           <button
@@ -269,6 +301,15 @@ export function Header({
                 📥 Import Data
               </button>
               <div className="border-t border-gray-600" />
+              <button
+                onClick={() => {
+                  // Toggle notifications - handled by parent
+                  setShowMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
+              >
+                🔔 Enable Notifications
+              </button>
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to clear all items? This cannot be undone.')) {

@@ -62,8 +62,8 @@ export function useNotifications(items: Item[]) {
 
     const checkUpcomingTasks = () => {
       const now = new Date();
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
       const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
       items.forEach((item) => {
         if (!isTask(item)) return;
@@ -76,17 +76,8 @@ export function useNotifications(items: Item[]) {
         // Check if already notified
         if (sessionStorage.getItem(notificationId)) return;
 
-        // Notify 1 hour before
-        if (deadline > now && deadline <= oneHourFromNow) {
-          new Notification('Task Due Soon', {
-            body: `"${task.name}" is due in 1 hour`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, '1h');
-        }
-
-        // Notify 15 minutes before
+        // Priority: 15 minutes before > 1 hour before
+        // Notify 15 minutes before (most urgent)
         if (deadline > now && deadline <= fifteenMinutesFromNow) {
           new Notification('Task Due Very Soon!', {
             body: `"${task.name}" is due in 15 minutes`,
@@ -94,6 +85,14 @@ export function useNotifications(items: Item[]) {
             tag: notificationId,
           });
           sessionStorage.setItem(notificationId, '15m');
+        } else if (deadline > now && deadline <= oneHourFromNow) {
+          // Notify 1 hour before (less urgent, only if not within 15 min)
+          new Notification('Task Due Soon', {
+            body: `"${task.name}" is due in 1 hour`,
+            icon: '/favicon.ico',
+            tag: notificationId,
+          });
+          sessionStorage.setItem(notificationId, '1h');
         }
       });
     };

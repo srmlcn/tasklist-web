@@ -27,7 +27,7 @@ export default function Home() {
   } = useItems();
 
   const { categories, updateCategories } = useCategories();
-  const { permission, enabled, toggleEnabled } = useNotifications(items);
+  const { permission, enabled, toggleEnabled, requestPermission } = useNotifications(items);
 
   // Dialog states
   const [showAddTask, setShowAddTask] = useState(false);
@@ -54,10 +54,8 @@ export default function Home() {
     setEditItem(item);
   }, []);
 
-  const handleDuplicateItem = useCallback((item: Item) => {
-    // Remove id and parentId to create a new item
-    const { id, parentId, ...rest } = item;
-    addItem({ ...rest, name: `${item.name} (Copy)` } as Omit<Item, 'id'>);
+  const handleDuplicateItem = useCallback((item: Omit<Item, 'id' | 'order'>) => {
+    addItem(item);
   }, [addItem]);
 
   const handleSaveEdit = useCallback((updatedItem: Item) => {
@@ -95,6 +93,14 @@ export default function Home() {
   const handleClearAll = useCallback(() => {
     clearAllItems();
   }, [clearAllItems]);
+
+  const handleToggleNotifications = useCallback(() => {
+    if (permission !== 'granted') {
+      requestPermission();
+    } else {
+      toggleEnabled();
+    }
+  }, [permission, requestPermission, toggleEnabled]);
 
   const handleReorderItems = useCallback((itemId: string, newOrder: number) => {
     const itemIndex = items.findIndex(i => i.id === itemId);
@@ -154,6 +160,8 @@ export default function Home() {
         onManageCategories={() => setShowCategoryManager(true)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        notificationsEnabled={enabled}
+        onToggleNotifications={handleToggleNotifications}
       />
 
       {viewMode === 'today' ? (

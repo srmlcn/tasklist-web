@@ -1,0 +1,122 @@
+'use client';
+
+import { useMemo } from 'react';
+import { Item, isTask, getItemDateTime } from '@/types';
+import { ItemTile } from './ItemTile';
+
+interface DayColumnProps {
+  date: Date;
+  items: Item[];
+  isToday: boolean;
+  showCurrentTime?: boolean;
+  currentTimePosition?: number;
+  onEditItem: (item: Item) => void;
+  onDeleteItem: (item: Item) => void;
+  onToggleComplete: (item: Item) => void;
+  searchTerm?: string;
+  sortByPriority?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
+
+export function DayColumn({
+  date,
+  items,
+  isToday,
+  showCurrentTime,
+  currentTimePosition,
+  onEditItem,
+  onDeleteItem,
+  onToggleComplete,
+  searchTerm,
+  sortByPriority,
+  isSelected,
+  onSelect,
+}: DayColumnProps) {
+  const sortedItems = useMemo(() => {
+    let filtered = [...items];
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(term) ||
+          item.description.toLowerCase().includes(term)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      if (sortByPriority) {
+        const priorityDiff = b.priority - a.priority;
+        if (priorityDiff !== 0) return priorityDiff;
+      }
+      const dateA = getItemDateTime(a);
+      const dateB = getItemDateTime(b);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return filtered;
+  }, [items, searchTerm, sortByPriority]);
+
+  const formatDayHeader = (): string => {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
+  return (
+    <div
+      className={`flex-shrink-0 w-40 border-r border-gray-700 relative ${
+        isSelected ? 'bg-gray-800/50' : ''
+      } ${isToday ? 'bg-slate-900/30' : ''}`}
+      onClick={onSelect}
+    >
+      {/* Time slots (visual guide) */}
+      <div className="relative h-[1440px]">
+        {/* Hour lines */}
+        {Array.from({ length: 24 }).map((_, hour) => (
+          <div
+            key={hour}
+            className="absolute left-0 right-0 border-t border-gray-800"
+            style={{ top: `${hour * 60}px` }}
+          >
+            <span className="absolute -top-3 left-1 text-[10px] text-gray-600">
+              {hour.toString().padStart(2, '0')}:00
+            </span>
+          </div>
+        ))}
+
+        {/* Current time indicator */}
+        {showCurrentTime && currentTimePosition !== undefined && (
+          <div
+            className="absolute left-0 right-0 z-20 pointer-events-none"
+            style={{ top: `${currentTimePosition}px` }}
+          >
+            <div className="flex items-center">
+              <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
+              <div className="flex-1 h-0.5 bg-red-500" />
+            </div>
+          </div>
+        )}
+
+        {/* Items */}
+        <div className="relative z-10 p-1 space-y-1">
+          {sortedItems.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs text-gray-600">No items</span>
+            </div>
+          ) : (
+            sortedItems.map((item) => (
+              <ItemTile
+                key={item.id}
+                item={item}
+                onEdit={() => onEditItem(item)}
+                onDelete={() => onDeleteItem(item)}
+                onToggleComplete={() => onToggleComplete(item)}
+                compact={false}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

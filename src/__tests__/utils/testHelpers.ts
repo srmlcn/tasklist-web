@@ -1,5 +1,3 @@
-import type { Item, Task, Appointment } from '@/types';
-
 export function createMockLocalStorage() {
   let store: Record<string, string> = {};
   

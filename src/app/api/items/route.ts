@@ -28,7 +28,7 @@ function setStoredItems(items: Item[]): void {
 }
 
 // In-memory storage for server-side API calls
-let serverItems: Item[] = [];
+const serverItems: Item[] = [];
 
 // GET /api/items - Get all items
 export async function GET() {

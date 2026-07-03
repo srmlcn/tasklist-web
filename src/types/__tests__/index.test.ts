@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { isTask, isAppointment, getItemDateTime } from '@/types';
 import { createTask, createAppointment } from '@/__tests__/utils';
 

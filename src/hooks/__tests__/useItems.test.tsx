@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useItems } from '@/hooks/useItems';
 import { getStoredItems, setStoredItems } from '@/context/SWRProvider';
-import type { Item, Task, Appointment } from '@/types';
+import type { Item } from '@/types';
 import { createTask, createAppointment } from '@/__tests__/utils';
 
 // Mock the storage functions

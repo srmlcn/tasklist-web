@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_KEY = 'tasklist-theme';
 
-// Default theme value for SSR
+// Default theme value for SSR only
 const defaultContext: ThemeContextType = {
   theme: 'dark',
   toggleTheme: () => {},
@@ -21,10 +21,10 @@ const defaultContext: ThemeContextType = {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
     const stored = localStorage.getItem(THEME_KEY) as Theme | null;
     if (stored === 'light' || stored === 'dark') {
       setTheme(stored);
@@ -39,7 +39,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('light', newTheme === 'light');
   };
 
-  // Always provide context, even during SSR
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
@@ -49,9 +48,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  // Return default context if not mounted (SSR)
-  if (!context) {
+  // Return default context only during SSR (when window is undefined)
+  // Throws if used outside ThemeProvider in client code
+  if (typeof window === 'undefined') {
     return defaultContext;
+  }
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 }

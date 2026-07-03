@@ -71,28 +71,32 @@ export function useNotifications(items: Item[]) {
         if (task.isComplete) return;
 
         const deadline = new Date(task.deadline);
-        const notificationId = `notified-${task.id}`;
-
-        // Check if already notified
-        if (sessionStorage.getItem(notificationId)) return;
 
         // Priority: 15 minutes before > 1 hour before
         // Notify 15 minutes before (most urgent)
         if (deadline > now && deadline <= fifteenMinutesFromNow) {
-          new Notification('Task Due Very Soon!', {
-            body: `"${task.name}" is due in 15 minutes`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, '15m');
+          const fifteenMinKey = `notified-15m-${task.id}`;
+          if (!sessionStorage.getItem(fifteenMinKey)) {
+            new Notification('Task Due Very Soon!', {
+              body: `"${task.name}" is due in 15 minutes`,
+              icon: '/favicon.ico',
+              tag: fifteenMinKey,
+            });
+            sessionStorage.setItem(fifteenMinKey, 'true');
+          }
         } else if (deadline > now && deadline <= oneHourFromNow) {
           // Notify 1 hour before (less urgent, only if not within 15 min)
-          new Notification('Task Due Soon', {
-            body: `"${task.name}" is due in 1 hour`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, '1h');
+          const oneHourKey = `notified-1h-${task.id}`;
+          const fifteenMinKey = `notified-15m-${task.id}`;
+          // Only send 1-hour notification if 15-minute wasn't already sent
+          if (!sessionStorage.getItem(fifteenMinKey) && !sessionStorage.getItem(oneHourKey)) {
+            new Notification('Task Due Soon', {
+              body: `"${task.name}" is due in 1 hour`,
+              icon: '/favicon.ico',
+              tag: oneHourKey,
+            });
+            sessionStorage.setItem(oneHourKey, 'true');
+          }
         }
       });
     };

@@ -8,6 +8,19 @@ export interface Recurrence {
   occurrences?: number; // Optional max occurrences
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  color: string; // Hex color
+}
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'work', name: 'Work', color: '#3B82F6' },
+  { id: 'personal', name: 'Personal', color: '#10B981' },
+  { id: 'health', name: 'Health', color: '#EF4444' },
+  { id: 'finance', name: 'Finance', color: '#F59E0B' },
+];
+
 export interface BaseItem {
   id: string;
   name: string;
@@ -17,6 +30,7 @@ export interface BaseItem {
   recurrence?: Recurrence;
   parentId?: string; // For recurring instances, links to the original item
   color?: string;
+  categoryId?: string; // Category ID reference
 }
 
 export interface Task extends BaseItem {

@@ -3,12 +3,14 @@
 import { useState, useCallback } from 'react';
 import { Item, Task, Appointment } from '@/types';
 import { useItems } from '@/hooks/useItems';
+import { useCategories } from '@/hooks/useCategories';
 import { Header } from '@/components/Header';
 import { CalendarView } from '@/components/CalendarView';
 import { AddTaskDialog } from '@/components/dialogs/AddTaskDialog';
 import { AddAppointmentDialog } from '@/components/dialogs/AddAppointmentDialog';
 import { EditItemDialog } from '@/components/dialogs/EditItemDialog';
 import { DeleteConfirmDialog } from '@/components/dialogs/DeleteConfirmDialog';
+import { CategoryManager } from '@/components/dialogs/CategoryManager';
 
 export default function Home() {
   const {
@@ -21,11 +23,14 @@ export default function Home() {
     clearAllItems,
   } = useItems();
 
+  const { categories, updateCategories } = useCategories();
+
   // Dialog states
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddAppointment, setShowAddAppointment] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<Item | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Search and sort
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,6 +95,7 @@ export default function Home() {
         onExport={handleExport}
         onImport={handleImport}
         onClearAll={handleClearAll}
+        onManageCategories={() => setShowCategoryManager(true)}
       />
 
       <CalendarView
@@ -106,12 +112,14 @@ export default function Home() {
         isOpen={showAddTask}
         onClose={() => setShowAddTask(false)}
         onAdd={handleAddTask}
+        categories={categories}
       />
 
       <AddAppointmentDialog
         isOpen={showAddAppointment}
         onClose={() => setShowAddAppointment(false)}
         onAdd={handleAddAppointment}
+        categories={categories}
       />
 
       <EditItemDialog
@@ -126,6 +134,13 @@ export default function Home() {
         onClose={() => setDeleteConfirmItem(null)}
         onConfirm={handleDeleteConfirm}
         item={deleteConfirmItem}
+      />
+
+      <CategoryManager
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        categories={categories}
+        onSave={updateCategories}
       />
     </div>
   );

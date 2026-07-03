@@ -369,6 +369,60 @@ This creates a merge commit that groups all feature commits together, maintainin
 - `git log --first-parent` shows a clean project history
 - `git log` shows the detailed development path
 
+### Hierarchical Branching Strategy
+
+Break down features into a tree structure, from macro to micro:
+
+```
+main
+  └── feat/user-authentication          # Feature umbrella
+        ├── feat/auth/types              # Type definitions
+        │     └── (atomic commits)
+        ├── feat/auth/login              # Login sub-feature
+        │     ├── feat/auth/login/api    # API layer
+        │     │     └── (atomic commits)
+        │     └── feat/auth/login/ui     # UI layer
+        │           └── (atomic commits)
+        ├── feat/auth/logout             # Logout sub-feature
+        │     └── (atomic commits)
+        └── feat/auth/session            # Session management
+              └── (atomic commits)
+```
+
+**Rules:**
+1. Each branch has exactly one logical concern
+2. Branch names reflect the scope: `feat/auth/login/api`
+3. Merge upward: `atomic → subfeature → feature → main`
+4. Never merge sideways (sibling features should not depend on each other)
+5. Rebase sub-branches onto parent before merging up
+
+**Example workflow:**
+
+```bash
+# Start with the smallest atomic piece
+git checkout -b feat/auth/types main
+git add src/types/auth.ts && git commit -m "feat(auth/types): define user and session types"
+git merge --no-ff feat/auth/types
+
+# Build on it with the next logical piece
+git checkout -b feat/auth/login/api feat/auth/types
+git add src/app/api/auth/login.ts && git commit -m "feat(auth/login/api): add login endpoint"
+git merge --no-ff feat/auth/login/api
+
+# Continue until feature is complete
+git checkout -b feat/auth feat/main  # Branch from updated main
+git merge --no-ff feat/auth/types
+git merge --no-ff feat/auth/login/api
+git merge --no-ff feat/auth/session
+git merge --no-ff feat/auth
+```
+
+This structure:
+- Makes code review focused (one logical change per PR)
+- Enables partial rollbacks if issues arise
+- Documents the decomposition of complex features
+- Allows parallel work on independent sub-features
+
 ### Use Meaningful Branch Names
 
 ```bash

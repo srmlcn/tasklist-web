@@ -41,7 +41,8 @@ export function useItems() {
   }, [localMutate]);
 
   const addItem = useCallback((item: Omit<Item, 'id'>): Item => {
-    const newItem = { ...item, id: generateId() } as Item;
+    const maxOrder = items.reduce((max, i) => Math.max(max, i.order || 0), 0);
+    const newItem = { ...item, id: generateId(), order: maxOrder + 1 } as Item;
     const newItems = [...items, newItem];
     saveItems(newItems);
     return newItem;
@@ -117,6 +118,10 @@ export function useItems() {
     saveItems([]);
   }, [saveItems]);
 
+  const reorderItems = useCallback((reorderedItems: Item[]) => {
+    saveItems(reorderedItems);
+  }, [saveItems]);
+
   return {
     items,
     isLoading,
@@ -129,6 +134,7 @@ export function useItems() {
     getAllItems,
     importItems,
     clearAllItems,
+    reorderItems,
     mutate: localMutate,
   };
 }

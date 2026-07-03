@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Appointment, PRIORITY_LABELS } from '@/types';
+import { Appointment, PRIORITY_LABELS, Recurrence } from '@/types';
+import { RecurrenceSelector } from './RecurrenceSelector';
 
 interface AddAppointmentDialogProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
   const [endTime, setEndTime] = useState('10:00');
   const [priority, setPriority] = useState(0);
   const [attendeesText, setAttendeesText] = useState('');
+  const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen) {
@@ -31,6 +33,7 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
       setEndTime('10:00');
       setPriority(0);
       setAttendeesText('');
+      setRecurrence(undefined);
     }
   }, [isOpen, initialDate]);
 
@@ -60,6 +63,7 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
       stop: endDateTime.toISOString(),
       priority,
       attendees,
+      recurrence,
     });
 
     onClose();
@@ -207,6 +211,9 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
               ))}
             </div>
           </div>
+
+          {/* Recurrence */}
+          <RecurrenceSelector value={recurrence} onChange={setRecurrence} />
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">

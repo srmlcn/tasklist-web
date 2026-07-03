@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { Item, getItemDateTime, isTask } from '@/types';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { Item, getItemDateTime, isTask, generateRecurringInstances } from '@/types';
 import { DayColumn } from './DayColumn';
 
 interface CalendarViewProps {
@@ -28,6 +28,28 @@ export function CalendarView({
   const [days, setDays] = useState<Date[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Expand recurring items into instances
+  const expandedItems = useMemo(() => {
+    if (days.length === 0) return items;
+    
+    const startDate = days[0];
+    const endDate = days[days.length - 1];
+    endDate.setHours(23, 59, 59, 999);
+    
+    const expanded: Item[] = [];
+    
+    for (const item of items) {
+      if (item.recurrence && item.recurrence.pattern !== 'none') {
+        const instances = generateRecurringInstances(item, startDate, endDate);
+        expanded.push(...instances);
+      } else {
+        expanded.push(item);
+      }
+    }
+    
+    return expanded;
+  }, [items, days]);
 
   // Initialize days array
   useEffect(() => {
@@ -77,12 +99,12 @@ export function CalendarView({
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
 
-      return items.filter((item) => {
+      return expandedItems.filter((item) => {
         const itemDate = getItemDateTime(item);
         return itemDate >= dayStart && itemDate <= dayEnd;
       });
     },
-    [items]
+    [expandedItems]
   );
 
   const isToday = (date: Date): boolean => {

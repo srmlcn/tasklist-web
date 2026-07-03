@@ -172,8 +172,6 @@ export default function Home() {
           onToggleComplete={handleToggleComplete}
           onAddTask={() => setShowAddTask(true)}
           onAddAppointment={() => setShowAddAppointment(true)}
-          searchTerm={searchTerm}
-          sortByPriority={sortByPriority}
           selectedItemId={selectedItem?.id}
           onSelectItem={setSelectedItem}
         />

@@ -41,8 +41,6 @@ interface TodayViewProps {
   onToggleComplete: (item: Item) => void;
   onAddTask: () => void;
   onAddAppointment: () => void;
-  searchTerm?: string;
-  sortByPriority?: boolean;
   selectedItemId?: string;
   onSelectItem?: (item: Item | null) => void;
 }
@@ -54,8 +52,6 @@ export function TodayView({
   onToggleComplete,
   onAddTask,
   onAddAppointment,
-  searchTerm,
-  sortByPriority,
   selectedItemId,
   onSelectItem,
 }: TodayViewProps) {
@@ -63,33 +59,24 @@ export function TodayView({
   today.setHours(0, 0, 0, 0);
 
   const todayItems = useMemo(() => {
-    let filtered = items.filter((item) => {
+    const startOfDay = new Date(today);
+    const endOfDay = new Date(today);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    // Expand recurring items into instances and filter for today
+    const allItems = items.flatMap((item) => {
+      if (item.recurrence && item.recurrence.pattern !== 'none') {
+        return generateRecurringInstances(item, startOfDay, endOfDay);
+      }
+      return [item];
+    });
+
+    return allItems.filter((item) => {
       const itemDate = getItemDateTime(item);
       itemDate.setHours(0, 0, 0, 0);
       return itemDate.getTime() === today.getTime();
-    });
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(term) ||
-          item.description.toLowerCase().includes(term)
-      );
-    }
-
-    if (sortByPriority) {
-      filtered.sort((a, b) => b.priority - a.priority);
-    } else {
-      filtered.sort((a, b) => {
-        const dateA = getItemDateTime(a);
-        const dateB = getItemDateTime(b);
-        return dateA.getTime() - dateB.getTime();
-      });
-    }
-
-    return filtered;
-  }, [items, searchTerm, sortByPriority]);
+    }).sort((a, b) => a.order - b.order);
+  }, [items]);
 
   return (
     <div className="flex-1 overflow-auto bg-gray-900 p-4">
@@ -136,8 +123,6 @@ export function TodayView({
             onEditItem={onEditItem}
             onDeleteItem={onDeleteItem}
             onToggleComplete={onToggleComplete}
-            searchTerm={searchTerm}
-            sortByPriority={sortByPriority}
             selectedItemId={selectedItemId}
             onSelectItem={onSelectItem}
           />

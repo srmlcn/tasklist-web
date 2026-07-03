@@ -10,16 +10,24 @@ export function useNotifications(items: Item[]) {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [enabled, setEnabled] = useState(false);
 
+  // Sync enabled state with actual permission
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
-    // Check stored preference
-    const stored = localStorage.getItem(NOTIFICATION_KEY);
-    setEnabled(stored === 'true');
-    
+
     // Check current permission
     if ('Notification' in window) {
-      setPermission(Notification.permission);
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+
+      // Only enable if permission is granted and localStorage says so
+      const stored = localStorage.getItem(NOTIFICATION_KEY);
+      if (currentPermission === 'granted' && stored === 'true') {
+        setEnabled(true);
+      } else {
+        // Clear stale state if permission was revoked
+        setEnabled(false);
+        localStorage.removeItem(NOTIFICATION_KEY);
+      }
     }
   }, []);
 
@@ -32,13 +40,17 @@ export function useNotifications(items: Item[]) {
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-      
+
       if (result === 'granted') {
         setEnabled(true);
         localStorage.setItem(NOTIFICATION_KEY, 'true');
         return true;
+      } else {
+        // Permission denied - ensure UI reflects this
+        setEnabled(false);
+        localStorage.removeItem(NOTIFICATION_KEY);
+        return false;
       }
-      return false;
     } catch (error) {
       console.error('Failed to request notification permission:', error);
       return false;
@@ -48,12 +60,16 @@ export function useNotifications(items: Item[]) {
   const toggleEnabled = useCallback(() => {
     if (permission !== 'granted') {
       requestPermission();
-      return;
+    } else {
+      // Toggle only when permission is already granted
+      const newEnabled = !enabled;
+      setEnabled(newEnabled);
+      if (newEnabled) {
+        localStorage.setItem(NOTIFICATION_KEY, 'true');
+      } else {
+        localStorage.removeItem(NOTIFICATION_KEY);
+      }
     }
-    
-    const newEnabled = !enabled;
-    setEnabled(newEnabled);
-    localStorage.setItem(NOTIFICATION_KEY, String(newEnabled));
   }, [enabled, permission, requestPermission]);
 
   // Check for upcoming tasks and send notifications

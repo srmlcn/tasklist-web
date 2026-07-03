@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Task, PRIORITY_LABELS } from '@/types';
+import { Task, PRIORITY_LABELS, Recurrence } from '@/types';
+import { RecurrenceSelector } from './RecurrenceSelector';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
   const [deadlineTime, setDeadlineTime] = useState('23:59');
   const [priority, setPriority] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,6 +29,7 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
       setDeadlineTime('23:59');
       setPriority(0);
       setIsComplete(false);
+      setRecurrence(undefined);
     }
   }, [isOpen, initialDate]);
 
@@ -45,6 +48,7 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
       deadline: deadlineDate.toISOString(),
       priority,
       isComplete,
+      recurrence,
     });
 
     onClose();
@@ -145,6 +149,9 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
               ))}
             </div>
           </div>
+
+          {/* Recurrence */}
+          <RecurrenceSelector value={recurrence} onChange={setRecurrence} />
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">

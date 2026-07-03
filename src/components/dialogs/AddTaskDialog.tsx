@@ -3,15 +3,19 @@
 import { useState, useEffect } from 'react';
 import { Task, PRIORITY_LABELS, Recurrence } from '@/types';
 import { RecurrenceSelector } from './RecurrenceSelector';
+import { CategorySelector } from './CategorySelector';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (task: Omit<Task, 'id'>) => void;
   initialDate?: Date;
+  categoryId?: string;
+  onCategoryChange?: (categoryId: string | undefined) => void;
+  categories?: import('@/types').Category[];
 }
 
-export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDialogProps) {
+export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate, categoryId, categories }: AddTaskDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -19,6 +23,7 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
   const [priority, setPriority] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen) {
@@ -30,8 +35,9 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
       setPriority(0);
       setIsComplete(false);
       setRecurrence(undefined);
+      setSelectedCategory(categoryId);
     }
-  }, [isOpen, initialDate]);
+  }, [isOpen, initialDate, categoryId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +55,7 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
       priority,
       isComplete,
       recurrence,
+      categoryId: selectedCategory,
     });
 
     onClose();
@@ -152,6 +159,9 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialDate }: AddTaskDi
 
           {/* Recurrence */}
           <RecurrenceSelector value={recurrence} onChange={setRecurrence} />
+
+          {/* Category */}
+          <CategorySelector value={selectedCategory} onChange={setSelectedCategory} categories={categories} />
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">

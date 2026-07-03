@@ -13,6 +13,7 @@ interface HeaderProps {
   onExport: () => void;
   onImport: (items: Item[]) => void;
   onClearAll: () => void;
+  onManageCategories?: () => void;
 }
 
 export function Header({
@@ -24,6 +25,7 @@ export function Header({
   onExport,
   onImport,
   onClearAll,
+  onManageCategories,
 }: HeaderProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showMenu, setShowMenu] = useState(false);
@@ -226,8 +228,19 @@ export function Header({
           {showMenu && (
             <div className="absolute top-full right-0 mt-1 w-48 bg-gray-700 rounded-md shadow-lg border border-gray-600 z-50">
               <button
-                onClick={handleExport}
+                onClick={() => {
+                  if (onManageCategories) {
+                    onManageCategories();
+                  }
+                  setShowMenu(false);
+                }}
                 className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 rounded-t-md transition-colors"
+              >
+                🏷️ Manage Categories
+              </button>
+              <button
+                onClick={handleExport}
+                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
               >
                 📤 Export Data
               </button>

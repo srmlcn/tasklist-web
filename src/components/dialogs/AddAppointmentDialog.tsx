@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Appointment, PRIORITY_LABELS, Recurrence } from '@/types';
+import { Appointment, PRIORITY_LABELS, Recurrence, Category } from '@/types';
 import { RecurrenceSelector } from './RecurrenceSelector';
+import { CategorySelector } from './CategorySelector';
 
 interface AddAppointmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (appointment: Omit<Appointment, 'id'>) => void;
   initialDate?: Date;
+  categoryId?: string;
+  categories?: Category[];
 }
 
-export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: AddAppointmentDialogProps) {
+export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate, categoryId, categories }: AddAppointmentDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -21,6 +24,7 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
   const [priority, setPriority] = useState(0);
   const [attendeesText, setAttendeesText] = useState('');
   const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,8 +38,9 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
       setPriority(0);
       setAttendeesText('');
       setRecurrence(undefined);
+      setSelectedCategory(categoryId);
     }
-  }, [isOpen, initialDate]);
+  }, [isOpen, initialDate, categoryId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +69,7 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
       priority,
       attendees,
       recurrence,
+      categoryId: selectedCategory,
     });
 
     onClose();
@@ -214,6 +220,9 @@ export function AddAppointmentDialog({ isOpen, onClose, onAdd, initialDate }: Ad
 
           {/* Recurrence */}
           <RecurrenceSelector value={recurrence} onChange={setRecurrence} />
+
+          {/* Category */}
+          <CategorySelector value={selectedCategory} onChange={setSelectedCategory} categories={categories} />
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">

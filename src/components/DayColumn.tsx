@@ -11,9 +11,11 @@ interface SortableItemWrapperProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleComplete: () => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
-function SortableItemWrapper({ item, onEdit, onDelete, onToggleComplete }: SortableItemWrapperProps) {
+function SortableItemWrapper({ item, onEdit, onDelete, onToggleComplete, isSelected, onSelect }: SortableItemWrapperProps) {
   const {
     attributes,
     listeners,
@@ -30,13 +32,21 @@ function SortableItemWrapper({ item, onEdit, onDelete, onToggleComplete }: Sorta
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      {...listeners}
+      onClick={onSelect}
+      className={isSelected ? 'ring-2 ring-blue-500 rounded-md' : ''}
+    >
       <ItemTile
         item={item}
         onEdit={onEdit}
         onDelete={onDelete}
         onToggleComplete={onToggleComplete}
         compact={false}
+        isSelected={isSelected}
       />
     </div>
   );
@@ -56,6 +66,8 @@ interface DayColumnProps {
   isSelected?: boolean;
   onSelect?: () => void;
   onReorderItems?: (items: Item[]) => void;
+  selectedItemId?: string;
+  onSelectItem?: (item: Item | null) => void;
 }
 
 export function DayColumn({
@@ -71,6 +83,8 @@ export function DayColumn({
   sortByPriority,
   isSelected,
   onSelect,
+  selectedItemId,
+  onSelectItem,
 }: DayColumnProps) {
   const sortedItems = useMemo(() => {
     let filtered = [...items];
@@ -150,6 +164,8 @@ export function DayColumn({
                 onEdit={() => onEditItem(item)}
                 onDelete={() => onDeleteItem(item)}
                 onToggleComplete={() => onToggleComplete(item)}
+                isSelected={selectedItemId === item.id}
+                onSelect={() => onSelectItem?.(item)}
               />
             ))
           )}

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Item, Task, Appointment } from '@/types';
+import { Item, Task, Appointment, isTask } from '@/types';
 import { useItems } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
+import { useKeyboardShortcuts, KeyboardShortcutsHelp } from '@/hooks/useKeyboardShortcuts';
 import { Header } from '@/components/Header';
 import { CalendarView } from '@/components/CalendarView';
 import { AddTaskDialog } from '@/components/dialogs/AddTaskDialog';
@@ -32,6 +33,7 @@ export default function Home() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<Item | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   // Search and sort
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,6 +105,32 @@ export default function Home() {
     reorderItems(updatedItems);
   }, [items, reorderItems]);
 
+  // Close all dialogs helper
+  const closeAllDialogs = useCallback(() => {
+    setShowAddTask(false);
+    setShowAddAppointment(false);
+    setEditItem(null);
+    setDeleteConfirmItem(null);
+    setShowCategoryManager(false);
+  }, []);
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts({
+    onAddTask: () => setShowAddTask(true),
+    onAddAppointment: () => setShowAddAppointment(true),
+    onSearch: () => document.querySelector<HTMLInputElement>('input[type="search"]')?.focus(),
+    onToggleSort: handleToggleSort,
+    onExport: handleExport,
+    onEscape: closeAllDialogs,
+    onDeleteSelected: () => selectedItem && setDeleteConfirmItem(selectedItem),
+    onEditSelected: () => selectedItem && setEditItem(selectedItem),
+    onToggleCompleteSelected: () => {
+      if (selectedItem && isTask(selectedItem)) {
+        toggleTaskComplete(selectedItem);
+      }
+    },
+  });
+
   return (
     <div className="flex flex-col h-screen">
       <Header
@@ -125,6 +153,8 @@ export default function Home() {
         onReorderItems={handleReorderItems}
         searchTerm={searchTerm}
         sortByPriority={sortByPriority}
+        selectedItemId={selectedItem?.id}
+        onSelectItem={setSelectedItem}
       />
 
       {/* Dialogs */}

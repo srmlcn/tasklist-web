@@ -8,7 +8,7 @@ import { CategorySelector } from './CategorySelector';
 interface AddAppointmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (appointment: Omit<Appointment, 'id'>) => void;
+  onAdd: (appointment: Omit<Appointment, 'id' | 'order'>) => void;
   initialDate?: Date;
   categoryId?: string;
   categories?: Category[];

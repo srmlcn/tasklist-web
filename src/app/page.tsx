@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Item, Task, Appointment, isTask } from '@/types';
+import { Item, Task, Appointment } from '@/types';
 import { useItems } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from '@/hooks/useKeyboardShortcuts';
@@ -42,11 +42,11 @@ export default function Home() {
   const [sortByPriority, setSortByPriority] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'today'>('calendar');
 
-  const handleAddTask = useCallback((task: Omit<Task, 'id'>) => {
+  const handleAddTask = useCallback((task: Omit<Task, 'id' | 'order'>) => {
     addItem(task);
   }, [addItem]);
 
-  const handleAddAppointment = useCallback((appointment: Omit<Appointment, 'id'>) => {
+  const handleAddAppointment = useCallback((appointment: Omit<Appointment, 'id' | 'order'>) => {
     addItem(appointment);
   }, [addItem]);
 
@@ -134,8 +134,8 @@ export default function Home() {
     onDeleteSelected: () => selectedItem && setDeleteConfirmItem(selectedItem),
     onEditSelected: () => selectedItem && setEditItem(selectedItem),
     onToggleCompleteSelected: () => {
-      if (selectedItem && isTask(selectedItem)) {
-        toggleTaskComplete(selectedItem);
+      if (selectedItem) {
+        toggleTaskComplete(selectedItem.id);
       }
     },
   });

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Item, Task, Appointment } from '@/types';
+import { useState, useCallback, useMemo } from 'react';
+import { Item, Task, Appointment, isTask, getItemDateTime } from '@/types';
 import { useItems } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from '@/hooks/useKeyboardShortcuts';
@@ -13,6 +13,10 @@ import { EditItemDialog } from '@/components/dialogs/EditItemDialog';
 import { DeleteConfirmDialog } from '@/components/dialogs/DeleteConfirmDialog';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CategoryManager } from '@/components/dialogs/CategoryManager';
+
+// Filter types
+type ItemFilter = 'all' | 'tasks' | 'appointments';
+type SortOption = 'time' | 'priority' | 'name' | 'deadline';
 
 export default function Home() {
   const {
@@ -37,10 +41,59 @@ export default function Home() {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
-  // Search and sort
+  // Search and filter
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortByPriority, setSortByPriority] = useState(false);
+  const [itemFilter, setItemFilter] = useState<ItemFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>('time');
   const [viewMode, setViewMode] = useState<'calendar' | 'today'>('calendar');
+
+  // Filter and sort items
+  const filteredItems = useMemo(() => {
+    let filtered = [...items];
+    
+    // Filter by type
+    if (itemFilter === 'tasks') {
+      filtered = filtered.filter(isTask);
+    } else if (itemFilter === 'appointments') {
+      filtered = filtered.filter((item): item is Appointment => !isTask(item));
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(term) ||
+          item.description.toLowerCase().includes(term)
+      );
+    }
+    
+    // Filter by category
+    if (categoryFilter) {
+      filtered = filtered.filter(item => item.categoryId === categoryFilter);
+    }
+    
+    // Sort items
+    filtered.sort((a, b) => {
+      switch (sortOption) {
+        case 'priority':
+          return b.priority - a.priority;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'deadline':
+          return getItemDateTime(a).getTime() - getItemDateTime(b).getTime();
+        case 'time':
+        default:
+          return a.order - b.order;
+      }
+    });
+    
+    return filtered;
+  }, [items, itemFilter, searchTerm, categoryFilter, sortOption]);
+
+  // Check if sort by priority is active (for Header compatibility)
+  const sortByPriority = sortOption === 'priority';
 
   const handleAddTask = useCallback((task: Omit<Task, 'id' | 'order'>) => {
     addItem(task);
@@ -79,7 +132,19 @@ export default function Home() {
   }, []);
 
   const handleToggleSort = useCallback(() => {
-    setSortByPriority((prev) => !prev);
+    setSortOption((prev) => (prev === 'priority' ? 'time' : 'priority'));
+  }, []);
+
+  const handleSortChange = useCallback((option: SortOption) => {
+    setSortOption(option);
+  }, []);
+
+  const handleFilterChange = useCallback((filter: ItemFilter) => {
+    setItemFilter(filter);
+  }, []);
+
+  const handleCategoryFilterChange = useCallback((categoryId: string | null) => {
+    setCategoryFilter(categoryId);
   }, []);
 
   const handleExport = useCallback(() => {
@@ -150,7 +215,8 @@ export default function Home() {
     <div className="flex flex-col h-screen">
       <Header
         onSearch={handleSearch}
-        sortByPriority={sortByPriority}
+        sortOption={sortOption}
+        onSortChange={handleSortChange}
         onToggleSort={handleToggleSort}
         onAddTask={() => setShowAddTask(true)}
         onAddAppointment={() => setShowAddAppointment(true)}
@@ -162,30 +228,31 @@ export default function Home() {
         onViewModeChange={setViewMode}
         notificationsEnabled={enabled}
         onToggleNotifications={handleToggleNotifications}
+        categories={categories}
+        itemFilter={itemFilter}
+        onFilterChange={handleFilterChange}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={handleCategoryFilterChange}
       />
 
       {viewMode === 'today' ? (
         <TodayView
-          items={items}
+          items={filteredItems}
           onEditItem={handleEditItem}
           onDeleteItem={(item) => setDeleteConfirmItem(item)}
           onToggleComplete={handleToggleComplete}
           onAddTask={() => setShowAddTask(true)}
           onAddAppointment={() => setShowAddAppointment(true)}
-          searchTerm={searchTerm}
-          sortByPriority={sortByPriority}
           selectedItemId={selectedItem?.id}
           onSelectItem={setSelectedItem}
         />
       ) : (
         <CalendarView
-          items={items}
+          items={filteredItems}
           onEditItem={handleEditItem}
           onDeleteItem={(item) => setDeleteConfirmItem(item)}
           onToggleComplete={handleToggleComplete}
           onReorderItems={handleReorderItems}
-          searchTerm={searchTerm}
-          sortByPriority={sortByPriority}
           selectedItemId={selectedItem?.id}
           onSelectItem={setSelectedItem}
         />

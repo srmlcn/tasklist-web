@@ -61,8 +61,6 @@ interface DayColumnProps {
   onEditItem: (item: Item) => void;
   onDeleteItem: (item: Item) => void;
   onToggleComplete: (item: Item) => void;
-  searchTerm?: string;
-  sortByPriority?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
   onReorderItems?: (items: Item[]) => void;
@@ -79,37 +77,18 @@ export function DayColumn({
   onEditItem,
   onDeleteItem,
   onToggleComplete,
-  searchTerm,
-  sortByPriority,
   isSelected,
   onSelect,
   selectedItemId,
   onSelectItem,
 }: DayColumnProps) {
   const sortedItems = useMemo(() => {
-    let filtered = [...items];
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(term) ||
-          item.description.toLowerCase().includes(term)
-      );
-    }
-
-    filtered.sort((a, b) => {
-      if (sortByPriority) {
-        const priorityDiff = b.priority - a.priority;
-        if (priorityDiff !== 0) return priorityDiff;
-      }
+    return [...items].sort((a, b) => {
       const dateA = getItemDateTime(a);
       const dateB = getItemDateTime(b);
       return dateA.getTime() - dateB.getTime();
     });
-
-    return filtered;
-  }, [items, searchTerm, sortByPriority]);
+  }, [items]);
 
   const formatDayHeader = (): string => {
     return date.toLocaleDateString('en-US', { weekday: 'long' });

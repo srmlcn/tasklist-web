@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Item, Task, Appointment, isTask, PRIORITY_LABELS, PRIORITY_COLORS } from '@/types';
 
 interface ItemTileProps {
@@ -21,6 +21,7 @@ export function ItemTile({
   isSelected = false,
 }: ItemTileProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
 
   const priorityColor = PRIORITY_COLORS[item.priority as keyof typeof PRIORITY_COLORS] || PRIORITY_COLORS[0];
   const priorityLabel = PRIORITY_LABELS[item.priority] || PRIORITY_LABELS[0];
@@ -49,12 +50,50 @@ export function ItemTile({
     return isTask(item) ? '📋' : '📅';
   };
 
+  const getBorderColor = (): string => {
+    switch (item.priority) {
+      case 3: return 'border-l-red-500';
+      case 2: return 'border-l-yellow-500';
+      case 1: return 'border-l-blue-500';
+      default: return 'border-l-gray-500';
+    }
+  };
+
+  const getPriorityBadge = () => {
+    if (isTask(item) && (item as Task).isComplete) return null;
+    
+    const colors = {
+      3: 'bg-red-500',
+      2: 'bg-yellow-500',
+      1: 'bg-blue-500',
+      0: 'bg-gray-500',
+    };
+    const labels = { 3: 'High', 2: 'Medium', 1: 'Low', 0: 'None' };
+    
+    return (
+      <div className={`absolute top-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${colors[item.priority as keyof typeof colors] || colors[0]}`}>
+        {labels[item.priority as keyof typeof labels] || labels[0]}
+      </div>
+    );
+  };
+
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onToggleComplete && isTask(item)) {
+      if (!(item as Task).isComplete) {
+        setJustCompleted(true);
+        setTimeout(() => setJustCompleted(false), 600);
+      }
       onToggleComplete();
     }
   };
+
+  // Clear animation when item is marked complete
+  useEffect(() => {
+    if (isTask(item) && (item as Task).isComplete) {
+      setJustCompleted(false);
+    }
+  }, [item]);
 
   const handleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,11 +102,11 @@ export function ItemTile({
 
   return (
     <div
-      className={`rounded-md border transition-all duration-200 cursor-pointer ${
+      className={`relative rounded-md border-l-4 transition-all duration-200 cursor-pointer ${
         isTask(item) && (item as Task).isComplete
-          ? 'bg-gray-700/50 border-gray-600 opacity-60'
-          : 'bg-gray-800 border-gray-700 hover:border-gray-600'
-      } ${isExpanded ? 'shadow-lg' : ''}`}
+          ? 'bg-gray-700/50 border-gray-600 border-l-gray-500 opacity-60'
+          : `bg-gray-800 border-gray-700 hover:border-gray-600 ${getBorderColor()}`
+      } ${isExpanded ? 'shadow-lg' : ''} ${justCompleted ? 'scale-105 ring-2 ring-green-500' : ''}`}
       onClick={handleExpand}
     >
       {/* Header */}
@@ -90,9 +129,6 @@ export function ItemTile({
               )}
             </button>
           )}
-
-          {/* Priority indicator */}
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityColor}`} />
 
           {/* Type icon */}
           <span className="text-sm">{getItemTypeIcon()}</span>

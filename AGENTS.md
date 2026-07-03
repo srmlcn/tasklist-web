@@ -474,4 +474,121 @@ Use code comments for:
 
 ---
 
+## 11. E2E Testing with Playwright
+
+This project uses Playwright for end-to-end testing. Tests are located in the `e2e/` directory.
+
+### Running E2E Tests
+
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run with visible browser
+npm run test:e2e:headed
+
+# Run with Playwright UI
+npm run test:e2e:ui
+
+# View HTML report
+npm run test:e2e:report
+
+# Run specific tests by name pattern
+npx playwright test --grep "task"
+```
+
+### Test Structure
+
+```
+e2e/
+├── fixtures.ts                    # Shared test fixtures and helpers
+├── pages/
+│   ├── index.ts                   # Page object exports
+│   ├── Header.ts                  # Header page object
+│   ├── Calendar.ts                # Calendar view page object
+│   └── dialogs/
+│       ├── index.ts               # Dialog exports
+│       ├── AddTaskDialog.ts       # Add task dialog page object
+│       ├── AddAppointmentDialog.ts
+│       ├── EditItemDialog.ts
+│       └── DeleteConfirmDialog.ts
+├── task.spec.ts                   # Task CRUD tests
+├── appointment.spec.ts            # Appointment CRUD tests
+├── search-sort.spec.ts            # Search and sort tests
+└── import-export.spec.ts          # Import/export tests
+```
+
+### Page Object Model (POM)
+
+Use the Page Object Model pattern for maintainable selectors and actions:
+
+```typescript
+import { test, expect } from './fixtures';
+import { Header, Calendar, AddTaskDialog } from './pages';
+
+test('create a new task', async ({ page, getTomorrowDate }) => {
+  const header = new Header(page);
+  const calendar = new Calendar(page);
+  const addTaskDialog = new AddTaskDialog(page);
+
+  await header.clickAddTask();
+  await addTaskDialog.addTask({
+    name: 'New Task',
+    deadlineDate: getTomorrowDate(),
+    priority: 'High',
+  });
+
+  await expect(calendar.isItemVisible('New Task')).resolves.toBe(true);
+});
+```
+
+### Available Fixtures
+
+| Fixture | Description |
+|---------|-------------|
+| `storageReset` | Clear localStorage and reload the page |
+| `getTodayDate` | Get today's date in ISO format (YYYY-MM-DD) |
+| `getTomorrowDate` | Get tomorrow's date |
+| `getDateDaysFromNow(days)` | Get date N days from today |
+| `getCurrentTime` | Get current time (HH:MM format) |
+
+### Adding Data Attributes
+
+For better testability, prefer adding `data-testid` attributes to components:
+
+```tsx
+// In component
+<div data-testid="calendar-grid">
+  <ItemTile data-testid={`item-${item.id}`} />
+</div>
+
+// In test
+const item = page.locator('[data-testid="item-1"]');
+```
+
+### Writing E2E Tests
+
+**Test conventions:**
+- One logical behavior per test
+- Use descriptive test names: `should create a task with all fields`
+- Clean up state between tests using `beforeEach` or fixtures
+- Avoid hardcoded waits; use `expect()` conditions with timeouts
+
+**What to test:**
+- User workflows (CRUD operations)
+- Form validation
+- Search and filter functionality
+- Sort behavior
+- Import/export functionality
+- Error handling
+- Empty states
+
+**What to avoid:**
+- Testing implementation details
+- Snapshot tests
+- Testing third-party services directly
+- Brittle selectors that break on UI changes
+
+---
+
 *Last updated: 2026-07-03*

@@ -5,7 +5,7 @@ import { Item, Task, Appointment } from '@/types';
 import { useItems } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from '@/hooks/useKeyboardShortcuts';
-import { Header } from '@/components/Header';
+import { Header, FloatingActionButton } from '@/components/Header';
 import { CalendarView, TodayView } from '@/components/CalendarView';
 import { AddTaskDialog } from '@/components/dialogs/AddTaskDialog';
 import { AddAppointmentDialog } from '@/components/dialogs/AddAppointmentDialog';
@@ -226,6 +226,11 @@ export default function Home() {
         onClose={() => setShowCategoryManager(false)}
         categories={categories}
         onSave={updateCategories}
+      />
+
+      <FloatingActionButton
+        onAddTask={() => setShowAddTask(true)}
+        onAddAppointment={() => setShowAddAppointment(true)}
       />
     </div>
   );

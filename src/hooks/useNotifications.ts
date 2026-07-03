@@ -3,19 +3,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Item, Task, isTask } from '@/types';
 
-const NOTIFICATION_KEY = 'tasklist-notifications-enabled';
+const NOTIFICATION_ENABLED_KEY = 'tasklist-notifications-enabled';
+const NOTIFICATION_TIMING_KEY = 'tasklist-notification-timing';
 const CHECK_INTERVAL = 60000; // Check every minute
+
+export type NotificationTiming = 5 | 15 | 30 | 60; // minutes before deadline
 
 export function useNotifications(items: Item[]) {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [enabled, setEnabled] = useState(false);
+  const [timing, setTiming] = useState<NotificationTiming[]>([15, 60]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    // Check stored preference
-    const stored = localStorage.getItem(NOTIFICATION_KEY);
-    setEnabled(stored === 'true');
+    // Check stored preferences
+    const storedEnabled = localStorage.getItem(NOTIFICATION_ENABLED_KEY);
+    setEnabled(storedEnabled === 'true');
+    
+    const storedTiming = localStorage.getItem(NOTIFICATION_TIMING_KEY);
+    if (storedTiming) {
+      try {
+        setTiming(JSON.parse(storedTiming));
+      } catch {
+        setTiming([15, 60]);
+      }
+    }
     
     // Check current permission
     if ('Notification' in window) {
@@ -35,7 +48,7 @@ export function useNotifications(items: Item[]) {
       
       if (result === 'granted') {
         setEnabled(true);
-        localStorage.setItem(NOTIFICATION_KEY, 'true');
+        localStorage.setItem(NOTIFICATION_ENABLED_KEY, 'true');
         return true;
       }
       return false;
@@ -53,8 +66,20 @@ export function useNotifications(items: Item[]) {
     
     const newEnabled = !enabled;
     setEnabled(newEnabled);
-    localStorage.setItem(NOTIFICATION_KEY, String(newEnabled));
+    localStorage.setItem(NOTIFICATION_ENABLED_KEY, String(newEnabled));
   }, [enabled, permission, requestPermission]);
+
+  const updateTiming = useCallback((newTiming: NotificationTiming[]) => {
+    setTiming(newTiming);
+    localStorage.setItem(NOTIFICATION_TIMING_KEY, JSON.stringify(newTiming));
+  }, []);
+
+  const toggleTiming = useCallback((minutes: NotificationTiming) => {
+    const newTiming = timing.includes(minutes)
+      ? timing.filter(t => t !== minutes)
+      : [...timing, minutes].sort((a, b) => b - a);
+    updateTiming(newTiming);
+  }, [timing, updateTiming]);
 
   // Check for upcoming tasks and send notifications
   useEffect(() => {
@@ -62,8 +87,6 @@ export function useNotifications(items: Item[]) {
 
     const checkUpcomingTasks = () => {
       const now = new Date();
-      const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
       items.forEach((item) => {
         if (!isTask(item)) return;
@@ -73,27 +96,28 @@ export function useNotifications(items: Item[]) {
         const deadline = new Date(task.deadline);
         const notificationId = `notified-${task.id}`;
 
-        // Check if already notified
-        if (sessionStorage.getItem(notificationId)) return;
-
-        // Priority: 15 minutes before > 1 hour before
-        // Notify 15 minutes before (most urgent)
-        if (deadline > now && deadline <= fifteenMinutesFromNow) {
-          new Notification('Task Due Very Soon!', {
-            body: `"${task.name}" is due in 15 minutes`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, '15m');
-        } else if (deadline > now && deadline <= oneHourFromNow) {
-          // Notify 1 hour before (less urgent, only if not within 15 min)
-          new Notification('Task Due Soon', {
-            body: `"${task.name}" is due in 1 hour`,
-            icon: '/favicon.ico',
-            tag: notificationId,
-          });
-          sessionStorage.setItem(notificationId, '1h');
-        }
+        // Check each timing option
+        timing.forEach((minutes) => {
+          const notifyTime = new Date(deadline.getTime() - minutes * 60 * 1000);
+          const timingKey = `${notificationId}-${minutes}m`;
+          
+          // Skip if already notified for this timing
+          if (sessionStorage.getItem(timingKey)) return;
+          
+          // Notify if within the notification window
+          if (now >= notifyTime && deadline > now) {
+            const timeLabel = minutes < 60 
+              ? `${minutes} minute${minutes > 1 ? 's' : ''}`
+              : `${minutes / 60} hour${minutes > 60 ? 's' : ''}`;
+            
+            new Notification('Task Reminder', {
+              body: `"${task.name}" is due in ${timeLabel}`,
+              icon: '/favicon.ico',
+              tag: timingKey,
+            });
+            sessionStorage.setItem(timingKey, 'true');
+          }
+        });
       });
     };
 
@@ -103,12 +127,15 @@ export function useNotifications(items: Item[]) {
     // Then check periodically
     const interval = setInterval(checkUpcomingTasks, CHECK_INTERVAL);
     return () => clearInterval(interval);
-  }, [items, enabled, permission]);
+  }, [items, enabled, permission, timing]);
 
   return {
     permission,
     enabled,
+    timing,
     requestPermission,
     toggleEnabled,
+    updateTiming,
+    toggleTiming,
   };
 }

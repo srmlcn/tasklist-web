@@ -343,3 +343,47 @@ export function Header({
     </header>
   );
 }
+
+// Floating Action Button for quick add
+interface FloatingActionButtonProps {
+  onAddTask: () => void;
+  onAddAppointment: () => void;
+}
+
+export function FloatingActionButton({ onAddTask, onAddAppointment }: FloatingActionButtonProps) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {showMenu && (
+        <div className="absolute bottom-16 right-0 flex flex-col gap-2 mb-2">
+          <button
+            onClick={() => { onAddTask(); setShowMenu(false); }}
+            className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-all animate-in slide-in-from-bottom-2"
+          >
+            <span className="text-lg">📋</span>
+            <span className="font-medium">Add Task</span>
+          </button>
+          <button
+            onClick={() => { onAddAppointment(); setShowMenu(false); }}
+            className="flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg transition-all animate-in slide-in-from-bottom-2"
+          >
+            <span className="text-lg">📅</span>
+            <span className="font-medium">Add Appointment</span>
+          </button>
+        </div>
+      )}
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className={`fab-button w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-transform ${
+          showMenu ? 'rotate-45' : ''
+        }`}
+        title="Quick add"
+      >
+        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    </div>
+  );
+}

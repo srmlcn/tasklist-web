@@ -59,7 +59,19 @@ export function TodayView({
   today.setHours(0, 0, 0, 0);
 
   const todayItems = useMemo(() => {
-    return items.filter((item) => {
+    const startOfDay = new Date(today);
+    const endOfDay = new Date(today);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    // Expand recurring items into instances and filter for today
+    const allItems = items.flatMap((item) => {
+      if (item.recurrence && item.recurrence.pattern !== 'none') {
+        return generateRecurringInstances(item, startOfDay, endOfDay);
+      }
+      return [item];
+    });
+
+    return allItems.filter((item) => {
       const itemDate = getItemDateTime(item);
       itemDate.setHours(0, 0, 0, 0);
       return itemDate.getTime() === today.getTime();

@@ -13,12 +13,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_KEY = 'tasklist-theme';
 
-// Default theme value for SSR
-const defaultContext: ThemeContextType = {
-  theme: 'dark',
-  toggleTheme: () => {},
-};
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
 
@@ -47,9 +41,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  // Return default context if not mounted (SSR)
+  // Throw error if ThemeProvider is not in the tree
   if (!context) {
-    return defaultContext;
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 }

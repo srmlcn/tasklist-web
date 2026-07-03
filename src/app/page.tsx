@@ -55,9 +55,9 @@ export default function Home() {
   }, []);
 
   const handleDuplicateItem = useCallback((item: Item) => {
-    // Create a new item with a copy suffix
-    const { id, parentId, ...rest } = item;
-    addItem({ ...rest, name: `${item.name} (Copy)` } as Omit<Item, 'id'>);
+    // Create a new item with a copy suffix - omit id and order
+    const { id, order, parentId, ...rest } = item;
+    addItem({ ...rest, name: `${item.name} (Copy)` });
   }, [addItem]);
 
   const handleSaveEdit = useCallback((updatedItem: Item) => {

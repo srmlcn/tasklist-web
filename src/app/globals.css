@@ -73,3 +73,32 @@ button, input, select, textarea {
 .light ::placeholder {
   color: #9ca3af;
 }
+
+/* Floating action button animation */
+.fab-button {
+  animation: fab-pulse 2s infinite;
+}
+
+@keyframes fab-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Smooth transitions */
+.transition-scale {
+  transition: transform 0.15s ease-out;
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+}
+
+.drop-target {
+  border: 2px dashed #3b82f6;
+}

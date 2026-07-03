@@ -15,6 +15,10 @@ interface HeaderProps {
   onImport: (items: Item[]) => void;
   onClearAll: () => void;
   onManageCategories?: () => void;
+  viewMode?: 'calendar' | 'today';
+  onViewModeChange?: (mode: 'calendar' | 'today') => void;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
 }
 
 export function Header({
@@ -27,6 +31,10 @@ export function Header({
   onImport,
   onClearAll,
   onManageCategories,
+  viewMode = 'calendar',
+  onViewModeChange,
+  notificationsEnabled = false,
+  onToggleNotifications,
 }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
@@ -228,6 +236,34 @@ export function Header({
           )}
         </button>
 
+        {/* View mode toggle */}
+        {onViewModeChange && (
+          <div className="flex rounded-md overflow-hidden border border-gray-600">
+            <button
+              onClick={() => onViewModeChange('today')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'today'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title="Today view"
+            >
+              📅 Today
+            </button>
+            <button
+              onClick={() => onViewModeChange('calendar')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title="Calendar view"
+            >
+              🗓️ Calendar
+            </button>
+          </div>
+        )}
+
         {/* Menu button */}
         <div className="relative" ref={menuRef}>
           <button
@@ -271,6 +307,17 @@ export function Header({
               <div className="border-t border-gray-600" />
               <button
                 onClick={() => {
+                  if (onToggleNotifications) {
+                    onToggleNotifications();
+                  }
+                  setShowMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
+              >
+                🔔 {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+              </button>
+              <button
+                onClick={() => {
                   if (confirm('Are you sure you want to clear all items? This cannot be undone.')) {
                     onClearAll();
                   }
@@ -294,5 +341,49 @@ export function Header({
         className="hidden"
       />
     </header>
+  );
+}
+
+// Floating Action Button for quick add
+interface FloatingActionButtonProps {
+  onAddTask: () => void;
+  onAddAppointment: () => void;
+}
+
+export function FloatingActionButton({ onAddTask, onAddAppointment }: FloatingActionButtonProps) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {showMenu && (
+        <div className="absolute bottom-16 right-0 flex flex-col gap-2 mb-2">
+          <button
+            onClick={() => { onAddTask(); setShowMenu(false); }}
+            className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-all animate-in slide-in-from-bottom-2"
+          >
+            <span className="text-lg">📋</span>
+            <span className="font-medium">Add Task</span>
+          </button>
+          <button
+            onClick={() => { onAddAppointment(); setShowMenu(false); }}
+            className="flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg transition-all animate-in slide-in-from-bottom-2"
+          >
+            <span className="text-lg">📅</span>
+            <span className="font-medium">Add Appointment</span>
+          </button>
+        </div>
+      )}
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className={`fab-button w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-transform ${
+          showMenu ? 'rotate-45' : ''
+        }`}
+        title="Quick add"
+      >
+        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    </div>
   );
 }

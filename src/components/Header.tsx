@@ -5,9 +5,13 @@ import { Item } from '@/types';
 import { getStoredItems, clearStoredItems, setStoredItems } from '@/context/SWRProvider';
 import { useTheme } from '@/context/ThemeContext';
 
+type ItemFilter = 'all' | 'tasks' | 'appointments';
+type SortOption = 'time' | 'priority' | 'name' | 'deadline';
+
 interface HeaderProps {
   onSearch: (term: string) => void;
-  sortByPriority: boolean;
+  sortOption: SortOption;
+  onSortChange: (option: SortOption) => void;
   onToggleSort: () => void;
   onAddTask: () => void;
   onAddAppointment: () => void;
@@ -15,11 +19,21 @@ interface HeaderProps {
   onImport: (items: Item[]) => void;
   onClearAll: () => void;
   onManageCategories?: () => void;
+  viewMode?: 'calendar' | 'today';
+  onViewModeChange?: (mode: 'calendar' | 'today') => void;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
+  categories?: { id: string; name: string; color: string }[];
+  itemFilter?: ItemFilter;
+  onFilterChange?: (filter: ItemFilter) => void;
+  categoryFilter?: string | null;
+  onCategoryFilterChange?: (categoryId: string | null) => void;
 }
 
 export function Header({
   onSearch,
-  sortByPriority,
+  sortOption,
+  onSortChange,
   onToggleSort,
   onAddTask,
   onAddAppointment,
@@ -27,13 +41,24 @@ export function Header({
   onImport,
   onClearAll,
   onManageCategories,
+  viewMode = 'calendar',
+  onViewModeChange,
+  notificationsEnabled = false,
+  onToggleNotifications,
+  categories = [],
+  itemFilter = 'all',
+  onFilterChange,
+  categoryFilter = null,
+  onCategoryFilterChange,
 }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close menus when clicking outside
@@ -44,6 +69,9 @@ export function Header({
       }
       if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
         setShowAddMenu(false);
+      }
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setShowSortMenu(false);
       }
     };
 
@@ -190,26 +218,105 @@ export function Header({
           </div>
         </div>
 
-        {/* Sort button */}
-        <button
-          onClick={onToggleSort}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-            sortByPriority
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-          title={sortByPriority ? 'Sorted by priority' : 'Sorted by time'}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
-            />
-          </svg>
-          <span className="text-sm">{sortByPriority ? 'Priority' : 'Time'}</span>
-        </button>
+        {/* Filter tabs */}
+        <div className="flex rounded-md overflow-hidden border border-gray-600">
+          {(['all', 'tasks', 'appointments'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => onFilterChange?.(filter)}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                itemFilter === filter
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title={`Show ${filter}`}
+            >
+              {filter === 'all' ? '📋 All' : filter === 'tasks' ? '✅ Tasks' : '📅 Appointments'}
+            </button>
+          ))}
+        </div>
+
+        {/* Category filter */}
+        {categories.length > 0 && (
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400">Category:</span>
+            <select
+              value={categoryFilter || ''}
+              onChange={(e) => onCategoryFilterChange?.(e.target.value || null)}
+              className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Sort dropdown */}
+        <div className="relative" ref={sortMenuRef}>
+          <button
+            onClick={() => setShowSortMenu(!showSortMenu)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+              sortOption !== 'time'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+            title="Sort options"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+              />
+            </svg>
+            <span className="text-sm">
+              {sortOption === 'time' ? 'Sort' : sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}
+            </span>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showSortMenu && (
+            <div className="absolute top-full right-0 mt-1 w-40 bg-gray-700 rounded-md shadow-lg border border-gray-600 z-50">
+              <button
+                onClick={() => { onSortChange('time'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm rounded-t-md transition-colors ${
+                  sortOption === 'time' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                🕐 By Time
+              </button>
+              <button
+                onClick={() => { onSortChange('priority'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                  sortOption === 'priority' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                ⭐ By Priority
+              </button>
+              <button
+                onClick={() => { onSortChange('name'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                  sortOption === 'name' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                🔤 By Name
+              </button>
+              <button
+                onClick={() => { onSortChange('deadline'); setShowSortMenu(false); }}
+                className={`w-full px-4 py-2 text-left text-sm rounded-b-md transition-colors ${
+                  sortOption === 'deadline' ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                📅 By Deadline
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Theme toggle */}
         <button
@@ -227,6 +334,34 @@ export function Header({
             </svg>
           )}
         </button>
+
+        {/* View mode toggle */}
+        {onViewModeChange && (
+          <div className="flex rounded-md overflow-hidden border border-gray-600">
+            <button
+              onClick={() => onViewModeChange('today')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'today'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title="Today view"
+            >
+              📅 Today
+            </button>
+            <button
+              onClick={() => onViewModeChange('calendar')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title="Calendar view"
+            >
+              🗓️ Calendar
+            </button>
+          </div>
+        )}
 
         {/* Menu button */}
         <div className="relative" ref={menuRef}>
@@ -269,6 +404,17 @@ export function Header({
                 📥 Import Data
               </button>
               <div className="border-t border-gray-600" />
+              <button
+                onClick={() => {
+                  if (onToggleNotifications) {
+                    onToggleNotifications();
+                  }
+                  setShowMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-gray-600 transition-colors"
+              >
+                🔔 {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+              </button>
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to clear all items? This cannot be undone.')) {

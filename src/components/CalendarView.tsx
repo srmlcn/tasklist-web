@@ -34,6 +34,131 @@ interface CalendarViewProps {
 const DAYS_TO_SHOW = 14;
 const HOUR_HEIGHT = 60; // pixels per hour
 
+interface TodayViewProps {
+  items: Item[];
+  onEditItem: (item: Item) => void;
+  onDeleteItem: (item: Item) => void;
+  onToggleComplete: (item: Item) => void;
+  onAddTask: () => void;
+  onAddAppointment: () => void;
+  searchTerm?: string;
+  sortByPriority?: boolean;
+  selectedItemId?: string;
+  onSelectItem?: (item: Item | null) => void;
+}
+
+export function TodayView({
+  items,
+  onEditItem,
+  onDeleteItem,
+  onToggleComplete,
+  onAddTask,
+  onAddAppointment,
+  searchTerm,
+  sortByPriority,
+  selectedItemId,
+  onSelectItem,
+}: TodayViewProps) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayItems = useMemo(() => {
+    let filtered = items.filter((item) => {
+      const itemDate = getItemDateTime(item);
+      itemDate.setHours(0, 0, 0, 0);
+      return itemDate.getTime() === today.getTime();
+    });
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(term) ||
+          item.description.toLowerCase().includes(term)
+      );
+    }
+
+    if (sortByPriority) {
+      filtered.sort((a, b) => b.priority - a.priority);
+    } else {
+      filtered.sort((a, b) => {
+        const dateA = getItemDateTime(a);
+        const dateB = getItemDateTime(b);
+        return dateA.getTime() - dateB.getTime();
+      });
+    }
+
+    return filtered;
+  }, [items, searchTerm, sortByPriority]);
+
+  return (
+    <div className="flex-1 overflow-hidden bg-gray-900 p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Today's header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-100">
+            {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </h1>
+          <p className="text-gray-400 mt-1">
+            {todayItems.length} {todayItems.length === 1 ? 'item' : 'items'} scheduled
+          </p>
+        </div>
+
+        {/* Quick add buttons */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={onAddTask}
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <span>📋</span>
+            <span>Add Task</span>
+          </button>
+          <button
+            onClick={onAddAppointment}
+            className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <span>📅</span>
+            <span>Add Appointment</span>
+          </button>
+        </div>
+
+        {/* Today's items */}
+        <div className="space-y-3">
+          {todayItems.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg mb-2">No items scheduled for today</p>
+              <p className="text-sm">Add a task or appointment to get started!</p>
+            </div>
+          ) : (
+            todayItems.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => onSelectItem?.(item)}
+                className={`${
+                  selectedItemId === item.id ? 'ring-2 ring-blue-500' : ''
+                }`}
+              >
+                <DayColumn
+                  date={today}
+                  items={[item]}
+                  isToday={true}
+                  onEditItem={onEditItem}
+                  onDeleteItem={onDeleteItem}
+                  onToggleComplete={onToggleComplete}
+                  searchTerm={searchTerm}
+                  sortByPriority={sortByPriority}
+                  selectedItemId={selectedItemId}
+                  onSelectItem={onSelectItem}
+                />
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CalendarView({
   items,
   onEditItem,

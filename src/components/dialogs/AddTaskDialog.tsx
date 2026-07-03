@@ -8,7 +8,7 @@ import { CategorySelector } from './CategorySelector';
 interface AddTaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (task: Omit<Task, 'id'>) => void;
+  onAdd: (task: Omit<Task, 'id' | 'order'>) => void;
   initialDate?: Date;
   categoryId?: string;
   onCategoryChange?: (categoryId: string | undefined) => void;

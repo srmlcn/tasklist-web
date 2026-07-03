@@ -7,10 +7,11 @@ interface EditItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (item: Item) => void;
+  onDuplicate?: (item: Item) => void;
   item: Item | null;
 }
 
-export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialogProps) {
+export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: EditItemDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(0);
@@ -301,6 +302,18 @@ export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialog
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
+            {onDuplicate && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (item) onDuplicate(item);
+                  onClose();
+                }}
+                className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md transition-colors"
+              >
+                📋 Duplicate
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

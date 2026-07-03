@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Item, Task, Appointment, isTask } from '@/types';
+import { Item, Task, Appointment } from '@/types';
 import { useItems } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from '@/hooks/useKeyboardShortcuts';
 import { Header } from '@/components/Header';
-import { CalendarView } from '@/components/CalendarView';
+import { CalendarView, TodayView } from '@/components/CalendarView';
 import { AddTaskDialog } from '@/components/dialogs/AddTaskDialog';
 import { AddAppointmentDialog } from '@/components/dialogs/AddAppointmentDialog';
 import { EditItemDialog } from '@/components/dialogs/EditItemDialog';
 import { DeleteConfirmDialog } from '@/components/dialogs/DeleteConfirmDialog';
+import { useNotifications } from '@/hooks/useNotifications';
 import { CategoryManager } from '@/components/dialogs/CategoryManager';
 
 export default function Home() {
@@ -26,6 +27,7 @@ export default function Home() {
   } = useItems();
 
   const { categories, updateCategories } = useCategories();
+  const { permission, enabled, toggleEnabled } = useNotifications(items);
 
   // Dialog states
   const [showAddTask, setShowAddTask] = useState(false);
@@ -38,18 +40,25 @@ export default function Home() {
   // Search and sort
   const [searchTerm, setSearchTerm] = useState('');
   const [sortByPriority, setSortByPriority] = useState(false);
+  const [viewMode, setViewMode] = useState<'calendar' | 'today'>('calendar');
 
-  const handleAddTask = useCallback((task: Omit<Task, 'id'>) => {
+  const handleAddTask = useCallback((task: Omit<Task, 'id' | 'order'>) => {
     addItem(task);
   }, [addItem]);
 
-  const handleAddAppointment = useCallback((appointment: Omit<Appointment, 'id'>) => {
+  const handleAddAppointment = useCallback((appointment: Omit<Appointment, 'id' | 'order'>) => {
     addItem(appointment);
   }, [addItem]);
 
   const handleEditItem = useCallback((item: Item) => {
     setEditItem(item);
   }, []);
+
+  const handleDuplicateItem = useCallback((item: Item) => {
+    // Remove id and parentId to create a new item
+    const { id, parentId, ...rest } = item;
+    addItem({ ...rest, name: `${item.name} (Copy)` } as Omit<Item, 'id'>);
+  }, [addItem]);
 
   const handleSaveEdit = useCallback((updatedItem: Item) => {
     updateItem(updatedItem.id, updatedItem);
@@ -125,8 +134,8 @@ export default function Home() {
     onDeleteSelected: () => selectedItem && setDeleteConfirmItem(selectedItem),
     onEditSelected: () => selectedItem && setEditItem(selectedItem),
     onToggleCompleteSelected: () => {
-      if (selectedItem && isTask(selectedItem)) {
-        toggleTaskComplete(selectedItem);
+      if (selectedItem) {
+        toggleTaskComplete(selectedItem.id);
       }
     },
   });
@@ -143,19 +152,36 @@ export default function Home() {
         onImport={handleImport}
         onClearAll={handleClearAll}
         onManageCategories={() => setShowCategoryManager(true)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
-      <CalendarView
-        items={items}
-        onEditItem={handleEditItem}
-        onDeleteItem={(item) => setDeleteConfirmItem(item)}
-        onToggleComplete={handleToggleComplete}
-        onReorderItems={handleReorderItems}
-        searchTerm={searchTerm}
-        sortByPriority={sortByPriority}
-        selectedItemId={selectedItem?.id}
-        onSelectItem={setSelectedItem}
-      />
+      {viewMode === 'today' ? (
+        <TodayView
+          items={items}
+          onEditItem={handleEditItem}
+          onDeleteItem={(item) => setDeleteConfirmItem(item)}
+          onToggleComplete={handleToggleComplete}
+          onAddTask={() => setShowAddTask(true)}
+          onAddAppointment={() => setShowAddAppointment(true)}
+          searchTerm={searchTerm}
+          sortByPriority={sortByPriority}
+          selectedItemId={selectedItem?.id}
+          onSelectItem={setSelectedItem}
+        />
+      ) : (
+        <CalendarView
+          items={items}
+          onEditItem={handleEditItem}
+          onDeleteItem={(item) => setDeleteConfirmItem(item)}
+          onToggleComplete={handleToggleComplete}
+          onReorderItems={handleReorderItems}
+          searchTerm={searchTerm}
+          sortByPriority={sortByPriority}
+          selectedItemId={selectedItem?.id}
+          onSelectItem={setSelectedItem}
+        />
+      )}
 
       {/* Dialogs */}
       <AddTaskDialog
@@ -176,6 +202,7 @@ export default function Home() {
         isOpen={editItem !== null}
         onClose={() => setEditItem(null)}
         onSave={handleSaveEdit}
+        onDuplicate={handleDuplicateItem}
         item={editItem}
       />
 

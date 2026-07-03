@@ -7,13 +7,16 @@ interface EditItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (item: Item) => void;
+  onDuplicate?: (item: Omit<Item, 'id' | 'order'>) => void;
   item: Item | null;
 }
 
-export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialogProps) {
+export function EditItemDialog({ isOpen, onClose, onSave, onDuplicate, item }: EditItemDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   // Task-specific fields
   const [deadline, setDeadline] = useState('');
@@ -32,6 +35,8 @@ export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialog
       setName(item.name);
       setDescription(item.description);
       setPriority(item.priority);
+      setTags(item.tags || []);
+      setTagInput('');
 
       if (isTask(item)) {
         const task = item as Task;
@@ -58,6 +63,77 @@ export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialog
     }
   }, [isOpen, item]);
 
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
+  // Build current form state for duplicate functionality
+  const getCurrentFormState = (): Omit<Item, 'id' | 'order'> | null => {
+    if (!name.trim() || !item) return null;
+
+    const currentItem = item;
+
+    if (isTask(currentItem)) {
+      const [hours, minutes] = deadlineTime.split(':').map(Number);
+      const deadlineDate = new Date(deadline);
+      deadlineDate.setHours(hours, minutes, 0, 0);
+
+      return {
+        type: 'task',
+        name: name.trim(),
+        description: description.trim(),
+        deadline: deadlineDate.toISOString(),
+        priority,
+        isComplete,
+        recurrence: currentItem.recurrence,
+        categoryId: currentItem.categoryId,
+        tags,
+      } as Omit<Task, 'id' | 'order'>;
+    } else {
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
+
+      const attendees = attendeesText
+        .split(',')
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0);
+
+      return {
+        type: 'appointment',
+        name: name.trim(),
+        description: description.trim(),
+        start: startDateTime.toISOString(),
+        stop: endDateTime.toISOString(),
+        priority,
+        attendees,
+        recurrence: currentItem.recurrence,
+        categoryId: currentItem.categoryId,
+        tags,
+      } as Omit<Appointment, 'id' | 'order'>;
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !item) return;
@@ -74,6 +150,7 @@ export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialog
         deadline: deadlineDate.toISOString(),
         priority,
         isComplete,
+        tags,
       } as Task);
     } else {
       const [startHours, startMinutes] = startTime.split(':').map(Number);
@@ -98,10 +175,19 @@ export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialog
         stop: endDateTime.toISOString(),
         priority,
         attendees,
+        tags,
       } as Appointment);
     }
 
     onClose();
+  };
+
+  const handleDuplicate = () => {
+    const formState = getCurrentFormState();
+    if (formState && onDuplicate) {
+      onDuplicate({ ...formState, name: `${formState.name} (Copy)` } as Omit<Item, 'id' | 'order'>);
+      onClose();
+    }
   };
 
   if (!isOpen || !item) return null;
@@ -299,8 +385,58 @@ export function EditItemDialog({ isOpen, onClose, onSave, item }: EditItemDialog
             </div>
           </div>
 
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Tags
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-gray-700 rounded-full text-xs text-gray-200"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="text-gray-400 hover:text-gray-200"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Add a tag..."
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex gap-3 pt-2">
+            {onDuplicate && (
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md transition-colors"
+              >
+                📋 Duplicate
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
